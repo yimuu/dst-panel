@@ -1,0 +1,2 @@
+# Production frontend build artifacts are vendored as generated output.
+dist/** -whitespace

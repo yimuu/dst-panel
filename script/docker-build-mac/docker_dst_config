@@ -1,0 +1,9 @@
+steamcmd=/data/steamcmd
+force_install_dir=/data/dst-dedicated-server
+cluster=MyDediServer
+backup=/data/backup
+mod_download_path=/data/mod
+bin=2664
+beta=0
+persistent_storage_root=/data
+conf_dir=klei
