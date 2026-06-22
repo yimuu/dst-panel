@@ -1,8 +1,9 @@
 # 使用官方的Ubuntu基础镜像
 FROM ubuntu:20.04
 
-LABEL maintainer="hujinbo23 jinbohu23@outlook.com"
-LABEL description="DoNotStarveTogehter server panel Rust migration. github: https://github.com/hujinbo23/dst-admin-go"
+LABEL org.opencontainers.image.title="dst-panel"
+LABEL org.opencontainers.image.description="Don't Starve Together server panel Rust migration."
+LABEL org.opencontainers.image.source="https://github.com/yimuu/dst-panel"
 
 # 更新并安装必要的软件包
 RUN dpkg --add-architecture i386 && \

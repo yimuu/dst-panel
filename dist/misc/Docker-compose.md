@@ -5,7 +5,7 @@ version: "3.8"
 
 services:
   dst-admin-rust:
-    image: hujinbo23/dst-admin-rust:latest
+    image: yimuu/dst-panel:latest
     container_name: dst-admin-rust
     restart: unless-stopped
     ports:

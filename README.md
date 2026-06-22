@@ -1,11 +1,7 @@
 # dst-admin-rust
 > 饥荒联机版管理后台
-> 
-> 预览 https://carrot-hu23.github.io/dst-admin-go-preview/
 
 [English](README-EN.md)/[中文](README.md)
-
-**新面板 [泰拉瑞亚面板](https://github.com/carrot-hu23/terraria-panel-app) 支持window,linux 一键启动，内置 1449 版本**
 
 ## 项目简介
 
@@ -29,7 +25,7 @@ DST Admin Rust 是一个使用 Rust 2024 迁移实现的《饥荒联机版》服
 ## 部署
 注意目录必须要有读写权限。
 
-点击查看 [部署文档](https://carrot-hu23.github.io/dst-admin-go-docs/)
+点击查看 [部署文档](docs/install.md)
 
 ## 预览
 

@@ -306,10 +306,10 @@ python parse_world_setting.py > world_template.json
 
 ## 开发者信息
 
-本工具集用于辅助 DST Admin Go 项目，提供游戏数据的离线解析和在线查询能力。
+本工具集用于辅助 DST Panel 项目，提供游戏数据的离线解析和在线查询能力。
 
 相关项目：
-- [DST Admin Go](https://github.com/hujinbo23/dst-admin-go) - 主项目
+- [DST Panel](https://github.com/yimuu/dst-panel) - 主项目
 - [Steam Web API](https://steamcommunity.com/dev) - Steam API 文档
 - [Don't Starve Together Wiki](https://dontstarve.fandom.com/wiki/Don%27t_Starve_Together) - 游戏官方 Wiki
 

@@ -26,7 +26,7 @@ fn assert_no_legacy_docker_paths(label: &str, contents: &str) {
         "/app/password.txt",
         "/app/first",
         "/app/dst-admin-rust.log",
-        "hujinbo23/dst-admin-go:",
+        "dst-admin-go:",
     ] {
         assert!(
             !contents.contains(legacy),
@@ -126,7 +126,6 @@ fn docker_and_install_entrypoints_execute_dst_admin_rust() {
         "static/script/dst-go.sh",
         "build_linux.sh",
         "build_window.sh",
-        "docker_build.sh",
         "docs/multiServer.md",
     ];
 
@@ -198,8 +197,7 @@ fn install_docs_build_local_rust_docker_image() {
         "install docs should run the local Rust Docker image"
     );
     assert!(
-        !install_doc.contains("docker pull hujinbo23/dst-admin-go")
-            && !install_doc.contains("hujinbo23/dst-admin-go:1.3.1"),
+        !install_doc.contains("docker pull") && !install_doc.contains("dst-admin-go:1.3.1"),
         "install docs should not direct users to the legacy Go Docker image"
     );
     for legacy in [
@@ -227,11 +225,11 @@ fn docker_publish_script_builds_and_pushes_rust_image() {
         "Docker publish script should build the Rust binary first"
     );
     assert!(
-        script.contains("hujinbo23/dst-admin-rust:$TAG"),
+        script.contains("IMAGE_NAME=${IMAGE_NAME:-yimuu/dst-panel}"),
         "Docker publish script should tag the Rust image"
     );
     assert!(
-        !script.contains("hujinbo23/dst-admin-go:$TAG"),
+        !script.contains("dst-admin-go:$TAG"),
         "Docker publish script should not publish the legacy Go image"
     );
 }
@@ -301,7 +299,7 @@ fn docker_context_contains_dist_directory_for_clean_checkout_builds() {
 fn frontend_dist_docker_references_use_rust_data_volume_layout() {
     let compose = repo_file("dist/misc/Docker-compose.md");
     assert!(compose.contains("dst-admin-rust"));
-    assert!(compose.contains("hujinbo23/dst-admin-rust"));
+    assert!(compose.contains("yimuu/dst-panel"));
     assert!(compose.contains("- ${PWD}/dstsave:/data"));
     assert_no_legacy_docker_paths("dist/misc/Docker-compose.md", &compose);
 
@@ -322,7 +320,7 @@ fn frontend_dist_docker_references_use_rust_data_volume_layout() {
     );
     assert!(js_bundle.contains("/data/backup"));
     assert!(js_bundle.contains("/data/dst-dedicated-server"));
-    assert!(js_bundle.contains("hujinbo23/dst-admin-rust"));
+    assert!(js_bundle.contains("yimuu/dst-panel"));
     assert_no_legacy_docker_paths("dist/assets/*.js", &js_bundle);
 }
 
@@ -505,11 +503,8 @@ printf '%s\n' "$*" >> docker-calls
         "x86_64-unknown-linux-gnu"
     );
     let docker_calls = fs::read_to_string(temp.path().join("docker-calls")).expect("docker calls");
-    assert!(
-        docker_calls
-            .contains("build --platform linux/amd64 -t hujinbo23/dst-admin-rust:test-tag .")
-    );
-    assert!(docker_calls.contains("push hujinbo23/dst-admin-rust:test-tag"));
+    assert!(docker_calls.contains("build --platform linux/amd64 -t yimuu/dst-panel:test-tag ."));
+    assert!(docker_calls.contains("push yimuu/dst-panel:test-tag"));
 }
 
 #[cfg(unix)]

@@ -3,6 +3,7 @@ set -e
 
 # 获取命令行参数
 TAG=$1
+IMAGE_NAME=${IMAGE_NAME:-yimuu/dst-panel}
 
 if [ -z "$TAG" ]; then
   echo "usage: ./docker_build.sh <tag>" >&2
@@ -13,7 +14,7 @@ fi
 RUST_TARGET=x86_64-unknown-linux-gnu ./build_linux.sh
 
 # 构建镜像
-docker build --platform linux/amd64 -t hujinbo23/dst-admin-rust:$TAG .
+docker build --platform linux/amd64 -t "$IMAGE_NAME:$TAG" .
 
 # 推送镜像到Docker Hub
-docker push hujinbo23/dst-admin-rust:$TAG
+docker push "$IMAGE_NAME:$TAG"

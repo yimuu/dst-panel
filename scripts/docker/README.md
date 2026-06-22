@@ -41,7 +41,7 @@ docker run -d \
   -p 10998:10998/udp \
   -p 10999:10999/udp \
   -v ~/dstsave:/data \
-  hujinbo23/dst-admin-rust:latest
+  yimuu/dst-panel:latest
 ```
 
 ### 3. 访问管理面板
@@ -101,7 +101,7 @@ docker run -d \
   -e BIND_ADDRESS="" \
   -e PORT=8082 \
   -e DATABASE=dst-db \
-  hujinbo23/dst-admin-rust:latest
+  yimuu/dst-panel:latest
 ```
 
 ### 方法二：挂载配置文件
@@ -114,7 +114,7 @@ docker run -d \
   -p 10999:10999/udp \
   -v ~/dstsave:/data \
   -v ~/dstsave/config.yml:/data/config.yml \
-  hujinbo23/dst-admin-rust:latest
+  yimuu/dst-panel:latest
 ```
 
 自定义 `config.yml` 时建议保留：
@@ -173,7 +173,7 @@ version: '3.8'
 
 services:
   dst-admin:
-    image: hujinbo23/dst-admin-rust:latest
+    image: yimuu/dst-panel:latest
     container_name: dst-admin
     restart: unless-stopped
     ports:
@@ -260,6 +260,5 @@ chmod -R 755 ~/dstsave
 
 ## 相关链接
 
-- [Docker Hub 镜像](https://hub.docker.com/r/hujinbo23/dst-admin-rust)
-- [GitHub 项目主页](https://github.com/hujinbo23/dst-admin-rust)
+- [GitHub 项目主页](https://github.com/yimuu/dst-panel)
 - [饥荒联机版官方 Wiki](https://dontstarve.fandom.com/wiki/Don%27t_Starve_Together)

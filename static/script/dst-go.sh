@@ -3,7 +3,7 @@
 
 APP_NAME=dst-admin-rust
 ARCHIVE_NAME=dst-admin-rust.tgz
-RELEASE_URL="https://github.com/hujinbo23/dst-admin-go/releases/download/2.0.0.beta/${ARCHIVE_NAME}"
+RELEASE_URL="https://github.com/yimuu/dst-panel/releases/download/2.0.0.beta/${ARCHIVE_NAME}"
 
 # 下载并解压 Rust 服务端二进制
 download() {
