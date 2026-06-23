@@ -107,6 +107,17 @@ README.md
 - Create: `web-ui/vitest.config.ts`
 - Modify: `README.md`
 
+- [ ] **Step 0: Preserve current packaged frontend assets before the first Vite build**
+
+Before running any command that can write to the root `dist/` directory, copy the existing packaged assets to a temporary backup:
+
+```bash
+mkdir -p /private/tmp/dst-panel-original-dist-for-vue-rebuild
+cp -R dist/favicon.ico dist/assets dist/misc "dist/Dst Emoji.woff2" /private/tmp/dst-panel-original-dist-for-vue-rebuild/
+```
+
+Expected: `/private/tmp/dst-panel-original-dist-for-vue-rebuild/` contains the existing favicon, font, image assets, and `misc/` files. Later tasks may restore these into `web-ui/public/` even after `npm run build` replaces root `dist/`.
+
 - [ ] **Step 1: Create the scaffold with the official Vue CLI wrapper**
 
 Run:
