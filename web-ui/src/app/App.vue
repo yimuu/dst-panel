@@ -1,12 +1,13 @@
 <template>
-  <main class="app-shell">
-    <h1>DST Admin</h1>
-    <p>Vue frontend scaffold is ready.</p>
-  </main>
+  <RouterView />
 </template>
 
+<script setup lang="ts">
+import { RouterView } from 'vue-router'
+</script>
+
 <style scoped>
-.app-shell {
+:deep(.app-shell) {
   min-height: 100vh;
   display: grid;
   place-content: center;
@@ -17,17 +18,17 @@
   background: #f8fafc;
 }
 
-h1,
-p {
+:deep(h1),
+:deep(p) {
   margin: 0;
 }
 
-h1 {
+:deep(h1) {
   font-size: 2rem;
   font-weight: 700;
 }
 
-p {
+:deep(p) {
   color: #4b5563;
 }
 </style>
