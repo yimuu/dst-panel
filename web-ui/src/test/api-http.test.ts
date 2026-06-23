@@ -1,12 +1,16 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, expectTypeOf, it, vi } from 'vitest'
 
+import { getInitStatus, updateUser } from '@/features/auth/auth.api'
+import { createBackup } from '@/features/backups/backup.api'
+import { createCluster, updateCluster } from '@/features/clusters/cluster.api'
 import { startLevel, stopLevel } from '@/features/game/game.api'
 import { saveLevels } from '@/features/levels/level.api'
-import { searchMods } from '@/features/mods/mod.api'
-import { deleteTask } from '@/features/settings/settings.api'
+import { deleteMod, searchMods } from '@/features/mods/mod.api'
+import { deleteTask, saveTask } from '@/features/settings/settings.api'
 import { getTopActive } from '@/features/statistics/statistics.api'
-import type { ApiEnvelope } from '@/shared/api/types'
+import type { ApiEnvelope, PageResult } from '@/shared/api/types'
 import { http, isApiSuccess, normalizeApiError, withCluster } from '@/shared/api/http'
+import type { ModSummary } from '@/shared/types/domain'
 
 const successResponse = { data: { code: 0, data: null } }
 
@@ -134,5 +138,20 @@ describe('API HTTP helpers', () => {
         endDate: '2026-01-31',
       },
     })
+  })
+
+  it('keeps important wrapper response types aligned with backend envelopes', () => {
+    expectTypeOf<ReturnType<typeof searchMods>>().toEqualTypeOf<
+      Promise<ApiEnvelope<PageResult<ModSummary>>>
+    >()
+    expectTypeOf<ReturnType<typeof createCluster>>().toEqualTypeOf<Promise<ApiEnvelope<null>>>()
+    expectTypeOf<ReturnType<typeof updateCluster>>().toEqualTypeOf<Promise<ApiEnvelope<null>>>()
+    expectTypeOf<ReturnType<typeof saveTask>>().toEqualTypeOf<Promise<ApiEnvelope<null>>>()
+    expectTypeOf<ReturnType<typeof updateUser>>().toEqualTypeOf<Promise<ApiEnvelope<null>>>()
+    expectTypeOf<ReturnType<typeof createBackup>>().toEqualTypeOf<Promise<ApiEnvelope<null>>>()
+    expectTypeOf<ReturnType<typeof deleteMod>>().toEqualTypeOf<Promise<ApiEnvelope<string>>>()
+    expectTypeOf<ReturnType<typeof getInitStatus>>().toEqualTypeOf<
+      Promise<ApiEnvelope<boolean | Record<string, unknown> | null>>
+    >()
   })
 })

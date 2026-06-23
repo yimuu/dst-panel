@@ -1,5 +1,5 @@
 import { apiDelete, apiGet, apiPost, apiPut } from '@/shared/api/http'
-import type { ApiEnvelope } from '@/shared/api/types'
+import type { ApiEnvelope, PageResult } from '@/shared/api/types'
 import type { ModSummary } from '@/shared/types/domain'
 
 export interface ModQuery {
@@ -15,7 +15,7 @@ export function listMods(params?: ModQuery): Promise<ApiEnvelope<ModSummary[]>> 
   return apiGet('/api/mod', { params })
 }
 
-export function searchMods(params?: ModQuery): Promise<ApiEnvelope<ModSummary[]>> {
+export function searchMods(params?: ModQuery): Promise<ApiEnvelope<PageResult<ModSummary>>> {
   return apiGet('/api/mod/search', { params })
 }
 
@@ -30,7 +30,7 @@ export function updateMod(
   return apiPut(`/api/mod/${encodeURIComponent(String(id))}`, payload)
 }
 
-export function deleteMod(id: string | number): Promise<ApiEnvelope<null>> {
+export function deleteMod(id: string | number): Promise<ApiEnvelope<string>> {
   return apiDelete(`/api/mod/${encodeURIComponent(String(id))}`)
 }
 

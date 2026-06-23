@@ -25,7 +25,7 @@ export function listBackups(cluster?: string): Promise<ApiEnvelope<BackupFile[]>
 export function createBackup(
   payload?: CreateBackupRequest,
   cluster?: string,
-): Promise<ApiEnvelope<string | null>> {
+): Promise<ApiEnvelope<null>> {
   return apiPost('/api/game/backup', payload, withCluster(cluster))
 }
 

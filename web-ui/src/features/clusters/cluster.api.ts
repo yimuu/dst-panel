@@ -15,11 +15,11 @@ export function listClusters(
   return apiGet('/api/cluster', { params })
 }
 
-export function createCluster(payload: ClusterPayload): Promise<ApiEnvelope<ClusterSummary>> {
+export function createCluster(payload: ClusterPayload): Promise<ApiEnvelope<null>> {
   return apiPost('/api/cluster', payload)
 }
 
-export function updateCluster(payload: ClusterPayload): Promise<ApiEnvelope<ClusterSummary>> {
+export function updateCluster(payload: ClusterPayload): Promise<ApiEnvelope<null>> {
   return apiPut('/api/cluster', payload)
 }
 

@@ -20,7 +20,7 @@ export function listTasks(): Promise<ApiEnvelope<TaskSummary[]>> {
   return apiGet('/api/task')
 }
 
-export function saveTask(payload: TaskPayload): Promise<ApiEnvelope<TaskSummary>> {
+export function saveTask(payload: TaskPayload): Promise<ApiEnvelope<null>> {
   return apiPost('/api/task', payload)
 }
 

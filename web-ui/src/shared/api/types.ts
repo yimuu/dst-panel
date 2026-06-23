@@ -18,6 +18,7 @@ export interface PageResult<T> {
   list?: T[]
   total?: number
   totalPages?: number
+  totalPage?: number
   page?: number
   size?: number
   pages?: number
