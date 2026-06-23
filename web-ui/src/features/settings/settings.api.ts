@@ -3,7 +3,21 @@ import type { ApiEnvelope } from '@/shared/api/types'
 import type { TaskSummary } from '@/shared/types/domain'
 
 export type SettingsPayload = Record<string, unknown>
-export type TaskPayload = Partial<TaskSummary> & Record<string, unknown>
+export interface SaveTaskRequest {
+  ID?: number
+  id?: number
+  clusterName?: string
+  levelName?: string
+  uuid?: string
+  cron: string
+  category: string
+  comment?: string
+  announcement?: string
+  sleep?: number
+  times?: number
+  script?: number | boolean
+}
+
 export type AutoCheckPayload = Record<string, unknown>
 
 export function getDstConfig(): Promise<ApiEnvelope<Record<string, unknown>>> {
@@ -20,7 +34,7 @@ export function listTasks(): Promise<ApiEnvelope<TaskSummary[]>> {
   return apiGet('/api/task')
 }
 
-export function saveTask(payload: TaskPayload): Promise<ApiEnvelope<null>> {
+export function saveTask(payload: SaveTaskRequest): Promise<ApiEnvelope<null>> {
   return apiPost('/api/task', payload)
 }
 
@@ -28,7 +42,7 @@ export function deleteTask(jobId: number | string): Promise<ApiEnvelope<null>> {
   return apiDelete('/api/task', { params: { jobId } })
 }
 
-export function getAutoCheck(checkType?: string): Promise<ApiEnvelope<Record<string, unknown>>> {
+export function getAutoCheck(checkType?: string): Promise<ApiEnvelope<Record<string, unknown>[]>> {
   return apiGet('/api/auto/check2', { params: { checkType } })
 }
 

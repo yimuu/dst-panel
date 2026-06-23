@@ -2,6 +2,13 @@ import { apiGet, apiPost } from '@/shared/api/http'
 import type { ApiEnvelope } from '@/shared/api/types'
 import type { InitRequest, LoginRequest, UserProfile } from '@/shared/types/domain'
 
+export interface UpdateUserRequest {
+  username: string
+  displayName: string
+  photoURL: string
+  password: string
+}
+
 export function getInitStatus(): Promise<ApiEnvelope<boolean | Record<string, unknown> | null>> {
   return apiGet('/api/init')
 }
@@ -22,8 +29,6 @@ export function getUser(): Promise<ApiEnvelope<UserProfile>> {
   return apiGet('/api/user')
 }
 
-export function updateUser(
-  payload: Partial<UserProfile> & Record<string, unknown>,
-): Promise<ApiEnvelope<null>> {
+export function updateUser(payload: UpdateUserRequest): Promise<ApiEnvelope<null>> {
   return apiPost('/api/user', payload)
 }

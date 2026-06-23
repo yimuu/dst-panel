@@ -1,12 +1,22 @@
 import { afterEach, describe, expect, expectTypeOf, it, vi } from 'vitest'
 
-import { getInitStatus, updateUser } from '@/features/auth/auth.api'
+import { getInitStatus, updateUser, type UpdateUserRequest } from '@/features/auth/auth.api'
 import { createBackup } from '@/features/backups/backup.api'
-import { createCluster, updateCluster } from '@/features/clusters/cluster.api'
+import {
+  createCluster,
+  updateCluster,
+  type CreateClusterRequest,
+  type UpdateClusterRequest,
+} from '@/features/clusters/cluster.api'
 import { startLevel, stopLevel } from '@/features/game/game.api'
 import { saveLevels } from '@/features/levels/level.api'
 import { deleteMod, searchMods } from '@/features/mods/mod.api'
-import { deleteTask, saveTask } from '@/features/settings/settings.api'
+import {
+  deleteTask,
+  getAutoCheck,
+  saveTask,
+  type SaveTaskRequest,
+} from '@/features/settings/settings.api'
 import { getTopActive } from '@/features/statistics/statistics.api'
 import type { ApiEnvelope, PageResult } from '@/shared/api/types'
 import { http, isApiSuccess, normalizeApiError, withCluster } from '@/shared/api/http'
@@ -150,8 +160,15 @@ describe('API HTTP helpers', () => {
     expectTypeOf<ReturnType<typeof updateUser>>().toEqualTypeOf<Promise<ApiEnvelope<null>>>()
     expectTypeOf<ReturnType<typeof createBackup>>().toEqualTypeOf<Promise<ApiEnvelope<null>>>()
     expectTypeOf<ReturnType<typeof deleteMod>>().toEqualTypeOf<Promise<ApiEnvelope<string>>>()
+    expectTypeOf<ReturnType<typeof getAutoCheck>>().toEqualTypeOf<
+      Promise<ApiEnvelope<Record<string, unknown>[]>>
+    >()
     expectTypeOf<ReturnType<typeof getInitStatus>>().toEqualTypeOf<
       Promise<ApiEnvelope<boolean | Record<string, unknown> | null>>
     >()
+    expectTypeOf<Parameters<typeof createCluster>[0]>().toEqualTypeOf<CreateClusterRequest>()
+    expectTypeOf<Parameters<typeof updateCluster>[0]>().toEqualTypeOf<UpdateClusterRequest>()
+    expectTypeOf<Parameters<typeof saveTask>[0]>().toEqualTypeOf<SaveTaskRequest>()
+    expectTypeOf<Parameters<typeof updateUser>[0]>().toEqualTypeOf<UpdateUserRequest>()
   })
 })
