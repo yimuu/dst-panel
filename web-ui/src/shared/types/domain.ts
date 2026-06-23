@@ -87,6 +87,7 @@ export interface ModSummary {
 export interface TaskSummary {
   ID?: number
   id?: number
+  jobId?: number | string
   clusterName?: string
   levelName?: string
   uuid?: string

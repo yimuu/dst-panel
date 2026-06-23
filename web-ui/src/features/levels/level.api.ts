@@ -15,15 +15,8 @@ export function createLevel(
   return apiPost('/api/cluster/level', payload, withCluster(cluster))
 }
 
-export function updateLevel(
-  levelName: string,
-  payload: LevelPayload,
-  cluster?: string,
-): Promise<ApiEnvelope<LevelSummary>> {
-  return apiPut('/api/cluster/level', payload, {
-    ...withCluster(cluster),
-    params: { levelName },
-  })
+export function saveLevels(levels: LevelSummary[], cluster?: string): Promise<ApiEnvelope<null>> {
+  return apiPut('/api/cluster/level', { levels }, withCluster(cluster))
 }
 
 export function deleteLevel(levelName: string, cluster?: string): Promise<ApiEnvelope<null>> {

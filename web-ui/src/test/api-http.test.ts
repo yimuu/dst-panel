@@ -1,9 +1,20 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { startLevel, stopLevel } from '@/features/game/game.api'
+import { saveLevels } from '@/features/levels/level.api'
+import { searchMods } from '@/features/mods/mod.api'
+import { deleteTask } from '@/features/settings/settings.api'
+import { getTopActive } from '@/features/statistics/statistics.api'
 import type { ApiEnvelope } from '@/shared/api/types'
-import { isApiSuccess, normalizeApiError } from '@/shared/api/http'
+import { http, isApiSuccess, normalizeApiError, withCluster } from '@/shared/api/http'
+
+const successResponse = { data: { code: 0, data: null } }
 
 describe('API HTTP helpers', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   it('treats backend success codes as successful envelopes', () => {
     const zeroCode: ApiEnvelope<null> = { code: 0, data: null }
     const okCode: ApiEnvelope<null> = { code: 200, data: null }
@@ -25,7 +36,103 @@ describe('API HTTP helpers', () => {
 
     expect(normalizeApiError(error)).toEqual({
       status: 401,
+      code: 401,
       message: 'unauthorized',
+      details: {
+        code: 401,
+        msg: 'unauthorized',
+      },
+    })
+  })
+
+  it('falls back to backend message fields and plain error messages', () => {
+    expect(
+      normalizeApiError({
+        response: {
+          data: {
+            message: 'backend message',
+          },
+        },
+      }).message,
+    ).toBe('backend message')
+
+    expect(normalizeApiError(new Error('plain failure')).message).toBe('plain failure')
+  })
+
+  it('builds the optional cluster header config', () => {
+    expect(withCluster()).toBeUndefined()
+    expect(withCluster('Cluster1')).toEqual({
+      headers: {
+        Cluster: 'Cluster1',
+      },
+    })
+  })
+
+  it('passes levelName query params to game lifecycle wrappers', async () => {
+    const get = vi.spyOn(http, 'get').mockResolvedValue(successResponse)
+
+    await startLevel('Master', 'Cluster1')
+    await stopLevel('Caves')
+
+    expect(get).toHaveBeenNthCalledWith(1, '/api/game/8level/start', {
+      headers: {
+        Cluster: 'Cluster1',
+      },
+      params: {
+        levelName: 'Master',
+      },
+    })
+    expect(get).toHaveBeenNthCalledWith(2, '/api/game/8level/stop', {
+      params: {
+        levelName: 'Caves',
+      },
+    })
+  })
+
+  it('saves the full level list with the backend body shape', async () => {
+    const put = vi.spyOn(http, 'put').mockResolvedValue(successResponse)
+    const levels = [{ levelName: 'Master' }]
+
+    await saveLevels(levels, 'Cluster1')
+
+    expect(put).toHaveBeenCalledWith(
+      '/api/cluster/level',
+      { levels },
+      {
+        headers: {
+          Cluster: 'Cluster1',
+        },
+      },
+    )
+  })
+
+  it('uses backend query parameter names for task, mod, and statistics wrappers', async () => {
+    const get = vi.spyOn(http, 'get').mockResolvedValue(successResponse)
+    const del = vi.spyOn(http, 'delete').mockResolvedValue(successResponse)
+
+    await deleteTask('42')
+    await searchMods({ text: 'geometric placement', page: 1, size: 20, lang: 'zh' })
+    await getTopActive({ N: 10, startDate: '2026-01-01', endDate: '2026-01-31' })
+
+    expect(del).toHaveBeenCalledWith('/api/task', {
+      params: {
+        jobId: '42',
+      },
+    })
+    expect(get).toHaveBeenNthCalledWith(1, '/api/mod/search', {
+      params: {
+        text: 'geometric placement',
+        page: 1,
+        size: 20,
+        lang: 'zh',
+      },
+    })
+    expect(get).toHaveBeenNthCalledWith(2, '/api/statistics/top/active', {
+      params: {
+        N: 10,
+        startDate: '2026-01-01',
+        endDate: '2026-01-31',
+      },
     })
   })
 })

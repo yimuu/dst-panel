@@ -12,12 +12,26 @@ export function getGameStatus(cluster?: string): Promise<ApiEnvelope<LevelSummar
   return apiGet('/api/game/8level/status', withCluster(cluster))
 }
 
-export function startGame(cluster?: string): Promise<ApiEnvelope<null>> {
-  return apiGet('/api/game/8level/start', withCluster(cluster))
+export function startLevel(levelName: string, cluster?: string): Promise<ApiEnvelope<null>> {
+  return apiGet('/api/game/8level/start', {
+    ...withCluster(cluster),
+    params: { levelName },
+  })
 }
 
-export function stopGame(cluster?: string): Promise<ApiEnvelope<null>> {
-  return apiGet('/api/game/8level/stop', withCluster(cluster))
+export function stopLevel(levelName: string, cluster?: string): Promise<ApiEnvelope<null>> {
+  return apiGet('/api/game/8level/stop', {
+    ...withCluster(cluster),
+    params: { levelName },
+  })
+}
+
+export function startGame(levelName: string, cluster?: string): Promise<ApiEnvelope<null>> {
+  return startLevel(levelName, cluster)
+}
+
+export function stopGame(levelName: string, cluster?: string): Promise<ApiEnvelope<null>> {
+  return stopLevel(levelName, cluster)
 }
 
 export function sendGameCommand(

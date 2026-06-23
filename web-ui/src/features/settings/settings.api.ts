@@ -24,12 +24,12 @@ export function saveTask(payload: TaskPayload): Promise<ApiEnvelope<TaskSummary>
   return apiPost('/api/task', payload)
 }
 
-export function deleteTask(id: number | string): Promise<ApiEnvelope<null>> {
-  return apiDelete('/api/task', { params: { id } })
+export function deleteTask(jobId: number | string): Promise<ApiEnvelope<null>> {
+  return apiDelete('/api/task', { params: { jobId } })
 }
 
-export function getAutoCheck(): Promise<ApiEnvelope<Record<string, unknown>>> {
-  return apiGet('/api/auto/check2')
+export function getAutoCheck(checkType?: string): Promise<ApiEnvelope<Record<string, unknown>>> {
+  return apiGet('/api/auto/check2', { params: { checkType } })
 }
 
 export function saveAutoCheck(

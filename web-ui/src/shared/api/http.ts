@@ -15,6 +15,7 @@ export function normalizeApiError(error: unknown): ApiError {
   const response = extractErrorResponse(error)
   const data = response?.data
   const status = response?.status
+  const code = readNumber(data, 'code')
   const message =
     readString(data, 'msg') ??
     readString(data, 'message') ??
@@ -23,7 +24,9 @@ export function normalizeApiError(error: unknown): ApiError {
 
   return {
     ...(status === undefined ? {} : { status }),
+    ...(code === undefined ? {} : { code }),
     message,
+    ...(data === undefined ? {} : { details: data }),
   }
 }
 

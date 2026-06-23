@@ -13,9 +13,11 @@ export interface ApiError {
 }
 
 export interface PageResult<T> {
+  data?: T[]
   records?: T[]
   list?: T[]
   total?: number
+  totalPages?: number
   page?: number
   size?: number
   pages?: number

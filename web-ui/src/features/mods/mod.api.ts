@@ -3,11 +3,10 @@ import type { ApiEnvelope } from '@/shared/api/types'
 import type { ModSummary } from '@/shared/types/domain'
 
 export interface ModQuery {
-  keyword?: string
-  modId?: string
+  text?: string
   page?: number
   size?: number
-  [key: string]: unknown
+  lang?: string
 }
 
 export type ModPayload = Partial<ModSummary> & Record<string, unknown>
