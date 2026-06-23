@@ -222,23 +222,20 @@ Ensure these scripts exist:
 {
   "scripts": {
     "dev": "vite",
-    "build": "run-p type-check \"build-only {@}\" --",
+    "build": "npm run type-check && npm run build-only",
     "preview": "vite preview",
     "test:unit": "vitest",
     "build-only": "vite build",
     "type-check": "vue-tsc --build",
     "lint": "eslint . --fix",
-    "format": "prettier --write src/"
+    "format": "prettier --write src/",
+    "format:check": "prettier --check src/",
+    "lint:check": "eslint ."
   }
 }
 ```
 
-If the scaffold does not install `npm-run-all2`, install it:
-
-```bash
-cd web-ui
-npm install -D npm-run-all2@latest
-```
+Expected: `npm run build` runs type-check before `vite build`; do not use `run-p` here because production builds write to root `dist/`.
 
 - [ ] **Step 6: Replace `web-ui/index.html`**
 
