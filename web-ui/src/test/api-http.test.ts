@@ -14,7 +14,10 @@ import { deleteMod, searchMods } from '@/features/mods/mod.api'
 import {
   deleteTask,
   getAutoCheck,
+  saveAutoCheck,
   saveTask,
+  type AutoCheckPayload,
+  type AutoCheckSummary,
   type SaveTaskRequest,
 } from '@/features/settings/settings.api'
 import { getTopActive } from '@/features/statistics/statistics.api'
@@ -127,6 +130,7 @@ describe('API HTTP helpers', () => {
     await deleteTask('42')
     await searchMods({ text: 'geometric placement', page: 1, size: 20, lang: 'zh' })
     await getTopActive({ N: 10, startDate: '2026-01-01', endDate: '2026-01-31' })
+    await getAutoCheck('UPDATE_GAME')
 
     expect(del).toHaveBeenCalledWith('/api/task', {
       params: {
@@ -148,6 +152,11 @@ describe('API HTTP helpers', () => {
         endDate: '2026-01-31',
       },
     })
+    expect(get).toHaveBeenNthCalledWith(3, '/api/auto/check2', {
+      params: {
+        checkType: 'UPDATE_GAME',
+      },
+    })
   })
 
   it('keeps important wrapper response types aligned with backend envelopes', () => {
@@ -161,7 +170,10 @@ describe('API HTTP helpers', () => {
     expectTypeOf<ReturnType<typeof createBackup>>().toEqualTypeOf<Promise<ApiEnvelope<null>>>()
     expectTypeOf<ReturnType<typeof deleteMod>>().toEqualTypeOf<Promise<ApiEnvelope<string>>>()
     expectTypeOf<ReturnType<typeof getAutoCheck>>().toEqualTypeOf<
-      Promise<ApiEnvelope<Record<string, unknown>[]>>
+      Promise<ApiEnvelope<AutoCheckSummary[]>>
+    >()
+    expectTypeOf<ReturnType<typeof saveAutoCheck>>().toEqualTypeOf<
+      Promise<ApiEnvelope<AutoCheckSummary>>
     >()
     expectTypeOf<ReturnType<typeof getInitStatus>>().toEqualTypeOf<
       Promise<ApiEnvelope<boolean | Record<string, unknown> | null>>
@@ -169,6 +181,7 @@ describe('API HTTP helpers', () => {
     expectTypeOf<Parameters<typeof createCluster>[0]>().toEqualTypeOf<CreateClusterRequest>()
     expectTypeOf<Parameters<typeof updateCluster>[0]>().toEqualTypeOf<UpdateClusterRequest>()
     expectTypeOf<Parameters<typeof saveTask>[0]>().toEqualTypeOf<SaveTaskRequest>()
+    expectTypeOf<Parameters<typeof saveAutoCheck>[0]>().toEqualTypeOf<AutoCheckPayload>()
     expectTypeOf<Parameters<typeof updateUser>[0]>().toEqualTypeOf<UpdateUserRequest>()
   })
 })

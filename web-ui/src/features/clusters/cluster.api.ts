@@ -15,7 +15,7 @@ export interface CreateClusterRequest {
   backup: string
   mod_download_path: string
   uuid: string
-  beta: number | boolean
+  beta: number
   bin: number
   ugc_directory: string
   persistent_storage_root: string
@@ -32,7 +32,7 @@ export type UpdateClusterRequest = (
       id: number
     }
 ) & {
-  description?: string
+  description: string
 }
 
 export function listClusters(
