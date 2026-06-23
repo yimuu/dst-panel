@@ -100,5 +100,18 @@ x86_64-w64-mingw32-gcc --version
 cargo build --release --bin dst-admin-rust
 ```
 
+## 前端开发
+
+前端源码位于 `web-ui/`，使用 Vue 3、TypeScript 和 Vite。生产构建输出到根目录 `dist/`，由 Rust 服务端继续按现有静态文件规则提供访问。
+
+```bash
+cd web-ui
+npm install
+npm run dev
+npm run type-check
+npm run test:unit -- --run
+npm run build
+```
+
 ## QQ 群
 ![QQ 群](docs/image/饥荒开服面板交流issue群聊二维码.png)
