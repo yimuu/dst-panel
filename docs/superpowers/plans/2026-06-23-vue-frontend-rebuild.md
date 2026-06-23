@@ -4,9 +4,9 @@
 
 **Goal:** Build a runnable Vue 3 + TypeScript + Vite frontend source project in `web-ui/` that preserves the Rust backend static serving contract and provides the API layer, admin shell, menu, and core page skeletons.
 
-**Architecture:** Add `web-ui/` as a separate frontend source tree that builds to the existing root `dist/` directory. Keep Rust source and route behavior unchanged; the Vue app consumes existing `/api/*` endpoints through typed feature API wrappers and uses hash routing for safe refresh behavior under the current Rust static handlers.
+**Architecture:** Add `web-ui/` as a separate frontend source tree that builds to the existing root `dist/` directory. Keep Rust source and route behavior unchanged; the Vue app consumes existing `/api/*` endpoints through typed feature API wrappers and uses hash routing for safe refresh behavior under the current Rust static handlers. The frontend is Chinese-only: do not add `vue-i18n`, locale resource files, language switches, or locale state.
 
-**Tech Stack:** Vue 3, TypeScript, Vite, Vue Router, Pinia, Axios, Element Plus, vue-i18n, Monaco Editor integration points, Vitest, Vue Test Utils, vue-tsc.
+**Tech Stack:** Vue 3, TypeScript, Vite, Vue Router, Pinia, Axios, Element Plus, Monaco Editor integration points, Vitest, Vue Test Utils, vue-tsc.
 
 ---
 
@@ -72,11 +72,7 @@ web-ui/
     │   ├── api/types.ts
     │   ├── components/PageState.vue
     │   ├── config/routes.ts
-    │   ├── i18n/en.ts
-    │   ├── i18n/index.ts
-    │   ├── i18n/jp.ts
-    │   ├── i18n/kr.ts
-    │   ├── i18n/zh.ts
+    │   ├── config/text.ts
     │   ├── stores/app.ts
     │   ├── stores/auth.ts
     │   ├── stores/cluster.ts
@@ -148,7 +144,7 @@ Run:
 
 ```bash
 cd web-ui
-npm install vue@latest vite@latest @vitejs/plugin-vue@latest vue-router@latest pinia@latest axios@latest element-plus@latest @element-plus/icons-vue@latest vue-i18n@latest monaco-editor@latest @monaco-editor/loader@latest
+npm install vue@latest vite@latest @vitejs/plugin-vue@latest vue-router@latest pinia@latest axios@latest element-plus@latest @element-plus/icons-vue@latest monaco-editor@latest @monaco-editor/loader@latest
 npm install -D vue-tsc@latest vitest@latest @vue/test-utils@latest jsdom@latest
 ```
 
@@ -788,14 +784,10 @@ git add web-ui/src/shared/api web-ui/src/shared/types web-ui/src/features web-ui
 git commit -m "feat: add frontend api layer"
 ```
 
-### Task 3: Pinia Stores And I18n
+### Task 3: Pinia Stores And Chinese Text Constants
 
 **Files:**
-- Create: `web-ui/src/shared/i18n/en.ts`
-- Create: `web-ui/src/shared/i18n/index.ts`
-- Create: `web-ui/src/shared/i18n/jp.ts`
-- Create: `web-ui/src/shared/i18n/kr.ts`
-- Create: `web-ui/src/shared/i18n/zh.ts`
+- Create: `web-ui/src/shared/config/text.ts`
 - Create: `web-ui/src/shared/stores/app.ts`
 - Create: `web-ui/src/shared/stores/auth.ts`
 - Create: `web-ui/src/shared/stores/cluster.ts`
@@ -803,6 +795,8 @@ git commit -m "feat: add frontend api layer"
 - Create: `web-ui/src/shared/stores/theme.ts`
 - Create: `web-ui/src/app/providers.ts`
 - Test: `web-ui/src/test/auth-store.test.ts`
+
+Language policy: this project is Chinese-only. Do not add `vue-i18n`, locale files, language switchers, `locale` store state, or `localStorage.language` handling.
 
 - [ ] **Step 1: Write the failing auth store test**
 
@@ -815,8 +809,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuthStore } from '@/shared/stores/auth'
 
 vi.mock('@/features/auth/auth.api', () => ({
-  getUser: vi.fn(async () => ({ code: 200, data: { username: 'admin', displayName: 'Admin' } })),
-  login: vi.fn(async () => ({ code: 200, data: { username: 'admin', displayName: 'Admin' } })),
+  getUser: vi.fn(async () => ({ code: 200, data: { username: 'admin', displayName: '管理员' } })),
+  login: vi.fn(async () => ({ code: 200, data: { username: 'admin', displayName: '管理员' } })),
   logout: vi.fn(async () => ({ code: 200, data: null })),
 }))
 
@@ -829,7 +823,7 @@ describe('auth store', () => {
     const store = useAuthStore()
 
     await store.loginWithPassword({ username: 'admin', password: 'secret' })
-    expect(store.user?.displayName).toBe('Admin')
+    expect(store.user?.displayName || store.user?.username).toBe('管理员')
     expect(store.isAuthenticated).toBe(true)
 
     await store.logoutUser()
@@ -850,15 +844,13 @@ npm run test:unit -- --run src/test/auth-store.test.ts
 
 Expected: FAIL because `@/shared/stores/auth` does not exist.
 
-- [ ] **Step 3: Add i18n message files**
+- [ ] **Step 3: Add reusable Chinese text constants**
 
-Create `web-ui/src/shared/i18n/zh.ts`:
+Create `web-ui/src/shared/config/text.ts`:
 
 ```ts
-export default {
-  app: {
-    title: '饥荒管理控制台',
-  },
+export const appText = {
+  title: '饥荒管理控制台',
   common: {
     loading: '加载中',
     empty: '暂无数据',
@@ -893,93 +885,10 @@ export default {
     help: '帮助',
     userProfile: '个人信息',
   },
-}
+} as const
 ```
 
-Create `web-ui/src/shared/i18n/en.ts`:
-
-```ts
-export default {
-  app: {
-    title: "Don't Starve Management Console",
-  },
-  common: {
-    loading: 'Loading',
-    empty: 'No data',
-    error: 'Failed to load',
-    save: 'Save',
-    refresh: 'Refresh',
-    disabled: 'Planned increment',
-  },
-  auth: {
-    login: 'Login',
-    username: 'Username',
-    password: 'Password',
-    logout: 'Logout',
-  },
-  menu: {
-    dashboard: 'Dashboard',
-    panel: 'Panel',
-    home: 'Home',
-    clusterIni: 'Cluster settings',
-    adminlist: 'Admin list',
-    whitelist: 'Whitelist',
-    blacklist: 'Blacklist',
-    levels: 'Worlds',
-    selectorMod: 'Selector mod',
-    preinstall: 'Templates',
-    genMap: 'Map preview',
-    mod: 'Mods',
-    backup: 'Backups',
-    playerLog: 'Player log',
-    setting: 'Settings',
-    lobby: 'Lobby',
-    help: 'Help',
-    userProfile: 'User profile',
-  },
-}
-```
-
-Create `web-ui/src/shared/i18n/jp.ts`:
-
-```ts
-import en from './en'
-
-export default en
-```
-
-Create `web-ui/src/shared/i18n/kr.ts`:
-
-```ts
-import en from './en'
-
-export default en
-```
-
-Create `web-ui/src/shared/i18n/index.ts`:
-
-```ts
-import { createI18n } from 'vue-i18n'
-
-import en from './en'
-import jp from './jp'
-import kr from './kr'
-import zh from './zh'
-
-export type SupportedLocale = 'zh' | 'en' | 'jp' | 'kr'
-
-export const i18n = createI18n({
-  legacy: false,
-  locale: (localStorage.getItem('language') as SupportedLocale) || 'zh',
-  fallbackLocale: 'en',
-  messages: {
-    zh,
-    en,
-    jp,
-    kr,
-  },
-})
-```
+Use these constants only where reuse helps. Page-specific labels can remain direct Chinese strings inside components.
 
 - [ ] **Step 4: Add stores**
 
@@ -1018,7 +927,7 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const response = await authApi.login(payload)
       if (!isApiSuccess(response)) {
-        throw new Error(response.msg || 'Login failed')
+        throw new Error(response.msg || '登录失败')
       }
       user.value = response.data
       initialized.value = true
@@ -1057,22 +966,19 @@ Create `web-ui/src/shared/stores/app.ts`:
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-import type { SupportedLocale } from '@/shared/i18n'
-
 export const useAppStore = defineStore('app', () => {
   const sidebarCollapsed = ref(false)
-  const locale = ref<SupportedLocale>((localStorage.getItem('language') as SupportedLocale) || 'zh')
+  const globalLoading = ref(false)
 
   function setSidebarCollapsed(value: boolean): void {
     sidebarCollapsed.value = value
   }
 
-  function setLocale(value: SupportedLocale): void {
-    locale.value = value
-    localStorage.setItem('language', value)
+  function setGlobalLoading(value: boolean): void {
+    globalLoading.value = value
   }
 
-  return { sidebarCollapsed, locale, setSidebarCollapsed, setLocale }
+  return { sidebarCollapsed, globalLoading, setSidebarCollapsed, setGlobalLoading }
 })
 ```
 
@@ -1095,7 +1001,8 @@ export const useClusterStore = defineStore('cluster', () => {
     loading.value = true
     try {
       const response = await listClusters()
-      clusters.value = isApiSuccess(response) ? response.data : []
+      const data = response.data
+      clusters.value = isApiSuccess(response) ? (Array.isArray(data) ? data : data.data || []) : []
     } finally {
       loading.value = false
     }
@@ -1172,11 +1079,8 @@ import ElementPlus from 'element-plus'
 import { createPinia } from 'pinia'
 import type { App } from 'vue'
 
-import { i18n } from '@/shared/i18n'
-
 export function installProviders(app: App): void {
   app.use(createPinia())
-  app.use(i18n)
   app.use(ElementPlus)
 }
 ```
@@ -1189,6 +1093,8 @@ Run:
 cd web-ui
 npm run test:unit -- --run src/test/auth-store.test.ts
 npm run type-check
+npm run lint:check
+npm run format:check
 ```
 
 Expected: PASS.
@@ -1196,7 +1102,7 @@ Expected: PASS.
 - [ ] **Step 7: Commit**
 
 ```bash
-git add web-ui/src/shared/i18n web-ui/src/shared/stores web-ui/src/app/providers.ts web-ui/src/test/auth-store.test.ts
+git add web-ui/src/shared/config/text.ts web-ui/src/shared/stores web-ui/src/app/providers.ts web-ui/src/test/auth-store.test.ts
 git commit -m "feat: add frontend app state"
 ```
 
@@ -1319,42 +1225,42 @@ import { routes } from '@/shared/config/routes'
 
 export interface AdminMenuItem {
   path: string
-  labelKey: string
+  label: string
   icon?: unknown
   children?: AdminMenuItem[]
 }
 
 export const adminMenuItems: AdminMenuItem[] = [
-  { path: routes.dashboard, labelKey: 'menu.dashboard', icon: DataAnalysis },
-  { path: routes.panel, labelKey: 'menu.panel', icon: Monitor },
+  { path: routes.dashboard, label: '仪表盘', icon: DataAnalysis },
+  { path: routes.panel, label: '面板', icon: Monitor },
   {
     path: '/home',
-    labelKey: 'menu.home',
+    label: '房间',
     icon: House,
     children: [
-      { path: routes.clusterIni, labelKey: 'menu.clusterIni' },
-      { path: routes.adminlist, labelKey: 'menu.adminlist' },
-      { path: routes.whitelist, labelKey: 'menu.whitelist' },
-      { path: routes.blacklist, labelKey: 'menu.blacklist' },
+      { path: routes.clusterIni, label: '集群设置' },
+      { path: routes.adminlist, label: '管理员列表' },
+      { path: routes.whitelist, label: '白名单' },
+      { path: routes.blacklist, label: '黑名单' },
     ],
   },
   {
     path: '/levels',
-    labelKey: 'menu.levels',
+    label: '世界',
     icon: Operation,
     children: [
-      { path: routes.levels, labelKey: 'menu.levels' },
-      { path: routes.selectorMod, labelKey: 'menu.selectorMod' },
-      { path: routes.preinstall, labelKey: 'menu.preinstall' },
-      { path: routes.genMap, labelKey: 'menu.genMap' },
+      { path: routes.levels, label: '世界' },
+      { path: routes.selectorMod, label: '选择模组' },
+      { path: routes.preinstall, label: '预设模板' },
+      { path: routes.genMap, label: '地图预览' },
     ],
   },
-  { path: routes.mod, labelKey: 'menu.mod', icon: Box },
-  { path: routes.backup, labelKey: 'menu.backup', icon: Files },
-  { path: routes.playerLog, labelKey: 'menu.playerLog', icon: UserFilled },
-  { path: routes.setting, labelKey: 'menu.setting', icon: Setting },
-  { path: routes.lobby, labelKey: 'menu.lobby', icon: House },
-  { path: routes.help, labelKey: 'menu.help', icon: Document },
+  { path: routes.mod, label: '模组', icon: Box },
+  { path: routes.backup, label: '备份', icon: Files },
+  { path: routes.playerLog, label: '玩家日志', icon: UserFilled },
+  { path: routes.setting, label: '设置', icon: Setting },
+  { path: routes.lobby, label: '大厅', icon: House },
+  { path: routes.help, label: '帮助', icon: Document },
 ]
 ```
 
@@ -1376,19 +1282,14 @@ Create `web-ui/src/layouts/AdminLayout.vue`:
 <script setup lang="ts">
 import { ArrowDown, Moon, Sunny } from '@element-plus/icons-vue'
 import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { RouterView, useRoute, useRouter } from 'vue-router'
 
 import { adminMenuItems, type AdminMenuItem } from '@/layouts/menu'
-import { i18n, type SupportedLocale } from '@/shared/i18n'
-import { useAppStore } from '@/shared/stores/app'
 import { useAuthStore } from '@/shared/stores/auth'
 import { useThemeStore } from '@/shared/stores/theme'
 
 const route = useRoute()
 const router = useRouter()
-const { t } = useI18n()
-const app = useAppStore()
 const auth = useAuthStore()
 const theme = useThemeStore()
 
@@ -1396,11 +1297,6 @@ const activePath = computed(() => route.path)
 
 function openMenu(item: AdminMenuItem): void {
   router.push(item.path)
-}
-
-function changeLocale(locale: SupportedLocale): void {
-  app.setLocale(locale)
-  i18n.global.locale.value = locale
 }
 
 async function logout(): Promise<void> {
@@ -1418,7 +1314,7 @@ async function logout(): Promise<void> {
           <el-sub-menu v-if="item.children" :index="item.path">
             <template #title>
               <el-icon v-if="item.icon"><component :is="item.icon" /></el-icon>
-              <span>{{ t(item.labelKey) }}</span>
+              <span>{{ item.label }}</span>
             </template>
             <el-menu-item
               v-for="child in item.children"
@@ -1426,12 +1322,12 @@ async function logout(): Promise<void> {
               :index="child.path"
               @click="openMenu(child)"
             >
-              {{ t(child.labelKey) }}
+              {{ child.label }}
             </el-menu-item>
           </el-sub-menu>
           <el-menu-item v-else :index="item.path" @click="openMenu(item)">
             <el-icon v-if="item.icon"><component :is="item.icon" /></el-icon>
-            <span>{{ t(item.labelKey) }}</span>
+            <span>{{ item.label }}</span>
           </el-menu-item>
         </template>
       </el-menu>
@@ -1446,20 +1342,6 @@ async function logout(): Promise<void> {
             circle
             @click="theme.setMode(theme.isDark ? 'light' : 'dark')"
           />
-          <el-dropdown @command="changeLocale">
-            <el-button>
-              {{ app.locale }}
-              <el-icon class="el-icon--right"><ArrowDown /></el-icon>
-            </el-button>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item command="zh">中文</el-dropdown-item>
-                <el-dropdown-item command="en">English</el-dropdown-item>
-                <el-dropdown-item command="jp">日本語</el-dropdown-item>
-                <el-dropdown-item command="kr">한국어</el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
           <el-dropdown>
             <el-button>
               {{ auth.user?.displayName || auth.user?.username || 'admin' }}
@@ -1467,8 +1349,8 @@ async function logout(): Promise<void> {
             </el-button>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item @click="router.push('/userProfile')">{{ t('menu.userProfile') }}</el-dropdown-item>
-                <el-dropdown-item divided @click="logout">{{ t('auth.logout') }}</el-dropdown-item>
+                <el-dropdown-item @click="router.push('/userProfile')">个人信息</el-dropdown-item>
+                <el-dropdown-item divided @click="logout">退出登录</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
@@ -1732,7 +1614,6 @@ import PlayerLogPage from '@/pages/PlayerLogPage.vue'
 import SettingsPage from '@/pages/SettingsPage.vue'
 import UserProfilePage from '@/pages/UserProfilePage.vue'
 import WorldLevelsPage from '@/pages/WorldLevelsPage.vue'
-import { i18n } from '@/shared/i18n'
 
 const pages = [
   BackupPage,
@@ -1754,7 +1635,7 @@ describe('core pages', () => {
     for (const page of pages) {
       const wrapper = mount(page, {
         global: {
-          plugins: [createPinia(), i18n],
+          plugins: [createPinia()],
           stubs: {
             RouterLink: true,
             RouterView: true,
@@ -1827,13 +1708,11 @@ Create `web-ui/src/pages/LoginPage.vue`:
 ```vue
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import { normalizeApiError } from '@/shared/api/http'
 import { useAuthStore } from '@/shared/stores/auth'
 
-const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
@@ -1853,17 +1732,17 @@ async function submit(): Promise<void> {
 
 <template>
   <el-card class="login-card">
-    <template #header>{{ t('app.title') }}</template>
+    <template #header>饥荒管理控制台</template>
     <el-form label-position="top" @submit.prevent="submit">
-      <el-form-item :label="t('auth.username')">
+      <el-form-item label="用户名">
         <el-input v-model="form.username" autocomplete="username" />
       </el-form-item>
-      <el-form-item :label="t('auth.password')">
+      <el-form-item label="密码">
         <el-input v-model="form.password" type="password" autocomplete="current-password" show-password />
       </el-form-item>
       <el-alert v-if="error" type="error" :title="error" show-icon :closable="false" />
       <el-button type="primary" :loading="auth.loading" native-type="submit" class="login-card__submit">
-        {{ t('auth.login') }}
+        登录
       </el-button>
     </el-form>
   </el-card>
@@ -2292,7 +2171,7 @@ If no changes were required, skip this commit.
 
 ## Self-Review Checklist
 
-- Spec coverage: Tasks cover `web-ui/`, latest Vue/Vite dependency line, build output to `dist/`, API wrappers, Pinia stores, i18n, admin layout, menu routes, core pages, static assets, tests, and Rust static route verification.
+- Spec coverage: Tasks cover `web-ui/`, latest Vue/Vite dependency line, build output to `dist/`, API wrappers, Pinia stores, Chinese text constants, admin layout, menu routes, core pages, static assets, tests, and Rust static route verification.
 - No backend redesign: The plan does not modify `src/` Rust modules or API route behavior.
 - Type consistency: `ApiEnvelope`, `UserProfile`, `LevelSummary`, `ClusterSummary`, and store method names are used consistently across tasks.
 - Execution safety: destructive actions are limited to Vite `build.emptyOutDir` writing root `dist/`, which is the intended frontend build output.

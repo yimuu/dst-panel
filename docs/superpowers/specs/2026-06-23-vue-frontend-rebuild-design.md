@@ -62,7 +62,7 @@ Use this stack for the first increment:
 - Axios for HTTP calls
 - Element Plus for the admin UI component system
 - `@element-plus/icons-vue` for UI icons
-- `vue-i18n` for language resources
+- No i18n dependency; this project is Chinese-only and UI text should be kept as direct Chinese constants
 - Monaco Editor integration points for Lua/config editing screens
 - Vitest and Vue Test Utils for unit/component tests
 - ESLint and Prettier if selected by `create-vue`
@@ -143,7 +143,6 @@ web-ui/src/
 │   ├── components/
 │   ├── composables/
 │   ├── config/
-│   ├── i18n/
 │   ├── stores/
 │   ├── styles/
 │   └── types/
@@ -208,7 +207,7 @@ Use Pinia stores for cross-page state only:
 - `clusterStore`: selected cluster and available clusters
 - `levelStore`: level list cache and refresh action
 - `themeStore`: light/dark and primary color settings
-- `appStore`: layout collapse state, language, global loading flags
+- `appStore`: layout collapse state and global loading flags
 
 Keep page-local form data in page components or feature components. Do not put every form field in Pinia.
 
@@ -218,7 +217,7 @@ The first increment should implement these route-level skeletons:
 
 - Login: calls `/api/login`, supports remember-style browser autofill, handles 401/500 messages.
 - Init: calls `/api/init`, posts initial credentials when required.
-- Admin layout: sidebar menu, top bar, user menu, language switch, theme switch, route guard.
+- Admin layout: sidebar menu, top bar, user menu, theme switch, route guard.
 - Panel: summary cards, world status table shell, start/stop action hooks wired to API wrappers where low-risk.
 - Worlds: level table/list skeleton, route tabs for cluster ini, admin list, whitelist, blacklist, world settings.
 - Mods: installed/subscription/manual mod page skeleton with table shell and API wrapper calls.
@@ -228,9 +227,9 @@ The first increment should implement these route-level skeletons:
 
 Skeleton pages should render real layout, loading states, empty states, and error states. Detailed editors, mod configuration parsing, map preview, log streaming, and player operations are scoped to subsequent increments.
 
-## Internationalization
+## Language Policy
 
-Use `vue-i18n` with `zh`, `en`, `jp`, and `kr` resource files because the current bundle includes those languages. The first increment should include route/menu and common action labels in all four languages where existing strings are visible in the bundle. Page-specific deep strings can fall back to Chinese in the first increment, but keys must be structured so they can be completed in subsequent translation increments.
+The rebuilt frontend is Chinese-only. Do not add `vue-i18n`, locale resource files, language switches, or locale state. Shared UI text can live in typed Chinese constants when reuse is useful; otherwise keep route and page labels directly in their Vue/menu modules.
 
 ## Styling
 
