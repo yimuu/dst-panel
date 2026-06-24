@@ -47,7 +47,7 @@ describe('auth store', () => {
     expect(store.isAuthenticated).toBe(true)
   })
 
-  it('logs in with username and password and stores the returned profile', async () => {
+  it('logs in with a login request object and stores the returned profile', async () => {
     const profile: UserProfile = {
       username: 'admin',
     }
@@ -55,7 +55,9 @@ describe('auth store', () => {
 
     const store = useAuthStore()
 
-    await expect(store.loginWithPassword('admin', 'secret')).resolves.toEqual(profile)
+    await expect(
+      store.loginWithPassword({ username: 'admin', password: 'secret' }),
+    ).resolves.toEqual(profile)
 
     expect(login).toHaveBeenCalledWith({
       username: 'admin',
@@ -74,7 +76,9 @@ describe('auth store', () => {
 
     const store = useAuthStore()
 
-    await expect(store.loginWithPassword('admin', 'wrong')).rejects.toThrow('登录失败')
+    await expect(store.loginWithPassword({ username: 'admin', password: 'wrong' })).rejects.toThrow(
+      '登录失败',
+    )
 
     expect(store.user).toBeNull()
     expect(store.loading).toBe(false)

@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 
 import * as authApi from '@/features/auth/auth.api'
 import { isApiSuccess } from '@/shared/api/http'
-import type { UserProfile } from '@/shared/types/domain'
+import type { LoginRequest, UserProfile } from '@/shared/types/domain'
 
 const fallbackLoginError = '登录失败'
 
@@ -30,14 +30,11 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function loginWithPassword(username: string, password: string): Promise<UserProfile> {
+  async function loginWithPassword(payload: LoginRequest): Promise<UserProfile> {
     loading.value = true
 
     try {
-      const response = await authApi.login({
-        username,
-        password,
-      })
+      const response = await authApi.login(payload)
 
       if (!isApiSuccess(response)) {
         throw new Error(response.msg || response.message || fallbackLoginError)

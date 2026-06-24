@@ -5,7 +5,7 @@ import { listLevels } from '@/features/levels/level.api'
 import { isApiSuccess } from '@/shared/api/http'
 import type { LevelSummary } from '@/shared/types/domain'
 
-export const useLevelsStore = defineStore('levels', () => {
+export const useLevelStore = defineStore('levels', () => {
   const levels = ref<LevelSummary[]>([])
   const loading = ref(false)
 
