@@ -1,54 +1,124 @@
-import { defineComponent, h } from 'vue'
 import { createRouter, createWebHashHistory, type RouteRecordRaw } from 'vue-router'
 
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import AuthLayout from '@/layouts/AuthLayout.vue'
-import { flattenAdminMenuItems } from '@/layouts/menu'
+import BackupPage from '@/pages/BackupPage.vue'
+import DashboardPage from '@/pages/DashboardPage.vue'
+import HelpPage from '@/pages/HelpPage.vue'
+import InitPage from '@/pages/InitPage.vue'
+import LobbyPage from '@/pages/LobbyPage.vue'
+import LoginPage from '@/pages/LoginPage.vue'
+import ModPage from '@/pages/ModPage.vue'
+import PanelPage from '@/pages/PanelPage.vue'
+import PlayerLogPage from '@/pages/PlayerLogPage.vue'
+import SettingsPage from '@/pages/SettingsPage.vue'
+import UserProfilePage from '@/pages/UserProfilePage.vue'
+import WorldLevelsPage from '@/pages/WorldLevelsPage.vue'
 import { routes as appRoutes } from '@/shared/config/routes'
 import { useAuthStore } from '@/shared/stores/auth'
-
-function createPlaceholder(title: string, kind: 'admin' | 'auth' = 'admin') {
-  return defineComponent({
-    name: `${title}Placeholder`,
-    setup() {
-      return () =>
-        h(
-          kind === 'auth' ? 'section' : 'div',
-          {
-            class: kind === 'auth' ? 'auth-placeholder' : 'route-placeholder',
-          },
-          [h(kind === 'auth' ? 'h1' : 'h2', title), h('p', '页面建设中')],
-        )
-    },
-  })
-}
 
 const authRoutes: RouteRecordRaw[] = [
   {
     path: appRoutes.login.slice(1),
     name: 'login',
-    component: createPlaceholder('登录', 'auth'),
+    component: LoginPage,
     meta: { public: true },
   },
   {
     path: appRoutes.init.slice(1),
     name: 'init',
-    component: createPlaceholder('初始化', 'auth'),
+    component: InitPage,
     meta: { public: true },
   },
 ]
 
-const adminRoutes: RouteRecordRaw[] = flattenAdminMenuItems().map((item) => ({
-  path: item.path.slice(1),
-  name: item.path.slice(1).split('/').join('-'),
-  component: createPlaceholder(item.label),
-}))
-
-adminRoutes.push({
-  path: appRoutes.userProfile.slice(1),
-  name: 'userProfile',
-  component: createPlaceholder('个人信息'),
-})
+const adminRoutes: RouteRecordRaw[] = [
+  {
+    path: appRoutes.dashboard.slice(1),
+    name: 'dashboard',
+    component: DashboardPage,
+  },
+  {
+    path: appRoutes.panel.slice(1),
+    name: 'panel',
+    component: PanelPage,
+  },
+  {
+    path: appRoutes.clusterIni.slice(1),
+    name: 'home-clusterIni',
+    component: PanelPage,
+  },
+  {
+    path: appRoutes.adminlist.slice(1),
+    name: 'home-adminlist',
+    component: PanelPage,
+  },
+  {
+    path: appRoutes.whitelist.slice(1),
+    name: 'home-whitelist',
+    component: PanelPage,
+  },
+  {
+    path: appRoutes.blacklist.slice(1),
+    name: 'home-blacklist',
+    component: PanelPage,
+  },
+  {
+    path: appRoutes.levels.slice(1),
+    name: 'levels-levels',
+    component: WorldLevelsPage,
+  },
+  {
+    path: appRoutes.selectorMod.slice(1),
+    name: 'levels-selectorMod',
+    component: WorldLevelsPage,
+  },
+  {
+    path: appRoutes.preinstall.slice(1),
+    name: 'levels-preinstall',
+    component: WorldLevelsPage,
+  },
+  {
+    path: appRoutes.genMap.slice(1),
+    name: 'levels-genMap',
+    component: WorldLevelsPage,
+  },
+  {
+    path: appRoutes.mod.slice(1),
+    name: 'mod',
+    component: ModPage,
+  },
+  {
+    path: appRoutes.backup.slice(1),
+    name: 'backup',
+    component: BackupPage,
+  },
+  {
+    path: appRoutes.playerLog.slice(1),
+    name: 'playerLog',
+    component: PlayerLogPage,
+  },
+  {
+    path: appRoutes.setting.slice(1),
+    name: 'setting',
+    component: SettingsPage,
+  },
+  {
+    path: appRoutes.lobby.slice(1),
+    name: 'lobby',
+    component: LobbyPage,
+  },
+  {
+    path: appRoutes.help.slice(1),
+    name: 'help',
+    component: HelpPage,
+  },
+  {
+    path: appRoutes.userProfile.slice(1),
+    name: 'userProfile',
+    component: UserProfilePage,
+  },
+]
 
 const routeRecords: RouteRecordRaw[] = [
   {
