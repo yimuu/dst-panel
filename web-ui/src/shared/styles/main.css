@@ -4,7 +4,7 @@
 
 @font-face {
   font-family: 'Dst Emoji';
-  src: url('/Dst Emoji.woff2') format('woff2');
+  src: url('/assets/dst-emoji.woff2') format('woff2');
   font-weight: normal;
   font-style: normal;
   font-display: swap;
