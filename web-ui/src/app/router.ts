@@ -98,5 +98,3 @@ export function createAppRouter() {
 
   return router
 }
-
-export const router = createAppRouter()

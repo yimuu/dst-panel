@@ -74,10 +74,16 @@ const router = useRouter()
 const auth = useAuthStore()
 const theme = useThemeStore()
 
+const adminRouteLabels: Record<string, string> = {
+  [routes.userProfile]: '个人信息',
+}
 const flatMenuItems = computed(() => flattenAdminMenuItems())
 const activeMenuPath = computed(() => route.path)
 const currentMenuLabel = computed(
-  () => flatMenuItems.value.find((item) => item.path === route.path)?.label || '控制台',
+  () =>
+    flatMenuItems.value.find((item) => item.path === route.path)?.label ||
+    adminRouteLabels[route.path] ||
+    '控制台',
 )
 const userName = computed(() => {
   const displayName = auth.user?.displayName
