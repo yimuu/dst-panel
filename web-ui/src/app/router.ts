@@ -3,7 +3,7 @@ import { createRouter, createWebHashHistory, type RouteRecordRaw } from 'vue-rou
 
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import AuthLayout from '@/layouts/AuthLayout.vue'
-import { adminMenuItems } from '@/layouts/menu'
+import { flattenAdminMenuItems } from '@/layouts/menu'
 import { routes as appRoutes } from '@/shared/config/routes'
 import { useAuthStore } from '@/shared/stores/auth'
 
@@ -12,10 +12,13 @@ function createPlaceholder(title: string, kind: 'admin' | 'auth' = 'admin') {
     name: `${title}Placeholder`,
     setup() {
       return () =>
-        h(kind === 'auth' ? 'section' : 'div', { class: `${kind}-placeholder` }, [
-          h(kind === 'auth' ? 'h1' : 'h2', title),
-          h('p', '页面建设中'),
-        ])
+        h(
+          kind === 'auth' ? 'section' : 'div',
+          {
+            class: kind === 'auth' ? 'auth-placeholder' : 'route-placeholder',
+          },
+          [h(kind === 'auth' ? 'h1' : 'h2', title), h('p', '页面建设中')],
+        )
     },
   })
 }
@@ -35,11 +38,17 @@ const authRoutes: RouteRecordRaw[] = [
   },
 ]
 
-const adminRoutes: RouteRecordRaw[] = adminMenuItems.map((item) => ({
+const adminRoutes: RouteRecordRaw[] = flattenAdminMenuItems().map((item) => ({
   path: item.path.slice(1),
   name: item.path.slice(1).split('/').join('-'),
   component: createPlaceholder(item.label),
 }))
+
+adminRoutes.push({
+  path: appRoutes.userProfile.slice(1),
+  name: 'userProfile',
+  component: createPlaceholder('个人信息'),
+})
 
 const routeRecords: RouteRecordRaw[] = [
   {

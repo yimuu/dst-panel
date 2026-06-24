@@ -7,12 +7,28 @@
       </div>
 
       <el-menu class="admin-menu" :default-active="activeMenuPath" @select="handleMenuSelect">
-        <el-menu-item v-for="item in adminMenuItems" :key="item.path" :index="item.path">
-          <el-icon>
-            <component :is="item.icon" />
-          </el-icon>
-          <span>{{ item.label }}</span>
-        </el-menu-item>
+        <template v-for="item in adminMenuItems" :key="item.path">
+          <el-sub-menu v-if="item.children" :index="item.path">
+            <template #title>
+              <el-icon v-if="item.icon">
+                <component :is="item.icon" />
+              </el-icon>
+              <span>{{ item.label }}</span>
+            </template>
+            <el-menu-item v-for="child in item.children" :key="child.path" :index="child.path">
+              <el-icon v-if="child.icon">
+                <component :is="child.icon" />
+              </el-icon>
+              <span>{{ child.label }}</span>
+            </el-menu-item>
+          </el-sub-menu>
+          <el-menu-item v-else :index="item.path">
+            <el-icon v-if="item.icon">
+              <component :is="item.icon" />
+            </el-icon>
+            <span>{{ item.label }}</span>
+          </el-menu-item>
+        </template>
       </el-menu>
     </el-aside>
 
@@ -28,7 +44,7 @@
             </button>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item command="profile">用户资料</el-dropdown-item>
+                <el-dropdown-item command="profile">个人信息</el-dropdown-item>
                 <el-dropdown-item divided command="logout">退出登录</el-dropdown-item>
               </el-dropdown-menu>
             </template>
@@ -48,7 +64,7 @@ import { computed, watchEffect } from 'vue'
 import { Moon, Sunny, User } from '@element-plus/icons-vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { adminMenuItems } from '@/layouts/menu'
+import { adminMenuItems, flattenAdminMenuItems } from '@/layouts/menu'
 import { routes } from '@/shared/config/routes'
 import { useAuthStore } from '@/shared/stores/auth'
 import { useThemeStore } from '@/shared/stores/theme'
@@ -58,9 +74,10 @@ const router = useRouter()
 const auth = useAuthStore()
 const theme = useThemeStore()
 
+const flatMenuItems = computed(() => flattenAdminMenuItems())
 const activeMenuPath = computed(() => route.path)
 const currentMenuLabel = computed(
-  () => adminMenuItems.find((item) => item.path === route.path)?.label || '控制台',
+  () => flatMenuItems.value.find((item) => item.path === route.path)?.label || '控制台',
 )
 const userName = computed(() => {
   const displayName = auth.user?.displayName
