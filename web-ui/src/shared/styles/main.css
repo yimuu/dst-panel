@@ -2,6 +2,18 @@
   box-sizing: border-box;
 }
 
+@font-face {
+  font-family: 'Dst Emoji';
+  src: url('/Dst Emoji.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+.dst-emoji {
+  font-family: 'Dst Emoji', sans-serif;
+}
+
 html,
 body,
 #app {
