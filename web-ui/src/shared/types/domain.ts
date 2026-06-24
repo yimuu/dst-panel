@@ -2,6 +2,7 @@ export interface UserProfile {
   ID?: number
   id?: number
   username?: string
+  displayName?: string
   name?: string
   role?: string
   avatar?: string

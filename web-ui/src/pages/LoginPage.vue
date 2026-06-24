@@ -48,8 +48,8 @@
 import { computed, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import { resolveLoginRedirect } from '@/pages/login-redirect'
 import { normalizeApiError } from '@/shared/api/http'
-import { routes } from '@/shared/config/routes'
 import { useAuthStore } from '@/shared/stores/auth'
 import type { LoginRequest } from '@/shared/types/domain'
 
@@ -63,10 +63,7 @@ const form = reactive<LoginRequest>({
 })
 const submitting = ref(false)
 const errorMessage = ref('')
-const redirectTarget = computed(() => {
-  const redirect = route.query.redirect
-  return typeof redirect === 'string' && redirect ? redirect : routes.panel
-})
+const redirectTarget = computed(() => resolveLoginRedirect(route.query.redirect))
 
 async function handleSubmit(): Promise<void> {
   errorMessage.value = ''
@@ -74,9 +71,16 @@ async function handleSubmit(): Promise<void> {
 
   try {
     await auth.loginWithPassword(form)
-    await router.replace(redirectTarget.value)
   } catch (error) {
     errorMessage.value = normalizeApiError(error).message
+    submitting.value = false
+    return
+  }
+
+  try {
+    await router.replace(redirectTarget.value)
+  } catch {
+    // Authentication already succeeded; navigation failures should not become login errors.
   } finally {
     submitting.value = false
   }

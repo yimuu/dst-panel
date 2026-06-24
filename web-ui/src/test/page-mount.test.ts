@@ -17,6 +17,13 @@ import SettingsPage from '@/pages/SettingsPage.vue'
 import UserProfilePage from '@/pages/UserProfilePage.vue'
 import WorldLevelsPage from '@/pages/WorldLevelsPage.vue'
 
+vi.mock('@/features/levels/level.api', () => ({
+  listLevels: vi.fn(async () => ({
+    code: 0,
+    data: [],
+  })),
+}))
+
 vi.mock('vue-router', async () => {
   const actual = await vi.importActual<typeof import('vue-router')>('vue-router')
 
