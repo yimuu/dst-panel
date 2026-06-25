@@ -82,13 +82,19 @@ export interface ModSummary {
   ID?: number
   id?: number
   modid?: string
+  workshop_id?: string | number
+  workshopId?: string | number
+  publishedfileid?: string | number
+  consumer_id?: number
+  consumer_appid?: number
+  creator_appid?: number
   name?: string
   description?: string
   img?: string
   auth?: string
   file_url?: string
   last_time?: number
-  mod_config?: string
+  mod_config?: string | Record<string, unknown>
   v?: string
   update?: boolean
   enabled?: boolean

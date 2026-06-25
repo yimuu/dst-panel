@@ -51,6 +51,23 @@ vi.mock('@/features/game/game.api', () => ({
   })),
 }))
 
+vi.mock('@/features/mods/mod.api', () => ({
+  listMods: vi.fn(async () => ({
+    code: 0,
+    data: [],
+  })),
+  searchMods: vi.fn(async () => ({
+    code: 0,
+    data: {
+      data: [],
+    },
+  })),
+  saveModInfo: vi.fn(async () => ({
+    code: 0,
+    data: null,
+  })),
+}))
+
 vi.mock('vue-router', async () => {
   const actual = await vi.importActual<typeof import('vue-router')>('vue-router')
 
