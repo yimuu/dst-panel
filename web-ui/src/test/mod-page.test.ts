@@ -151,11 +151,21 @@ describe('mod page workflow', () => {
       v: '1.0',
       update: true,
     }
+    const duplicateNewMod: ModSummary = {
+      ...newMod,
+      name: '新模组重复',
+    }
+    const consumerOnlyMod: ModSummary = {
+      consumer_id: 322330,
+      name: '仅应用 ID',
+    }
 
     listMods
       .mockResolvedValueOnce(success([storedMod]))
       .mockResolvedValueOnce(success([storedMod, newMod]))
-    searchMods.mockResolvedValue(success(page([storedMod, newMod])))
+    searchMods.mockResolvedValue(
+      success(page([storedMod, newMod, duplicateNewMod, consumerOnlyMod])),
+    )
 
     mountModPage()
     await flushPromises()
@@ -165,6 +175,7 @@ describe('mod page workflow', () => {
 
     expect(wrapper?.text()).toContain('新模组说明')
     expect(wrapper?.text()).toContain('作者')
+    expect(wrapper?.find('[data-test="mod-result-toggle-322330"]').exists()).toBe(false)
 
     await wrapper?.find('[data-test="mod-result-toggle-1"]').trigger('click')
     await wrapper?.find('[data-test="mod-result-toggle-2"]').trigger('click')

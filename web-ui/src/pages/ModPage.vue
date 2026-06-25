@@ -217,9 +217,20 @@ function isSelected(mod: ModSummary): boolean {
 
 async function saveSelectedMods(): Promise<void> {
   const storedIds = new Set(storedMods.value.map(getModId).filter(Boolean))
+  const saveIds = new Set<string>()
   const modsToSave = searchResults.value.filter((mod) => {
     const modId = getModId(mod)
-    return modId && selectedModIds.value.includes(modId) && !storedIds.has(modId)
+
+    if (!modId || !selectedModIds.value.includes(modId) || storedIds.has(modId)) {
+      return false
+    }
+
+    if (saveIds.has(modId)) {
+      return false
+    }
+
+    saveIds.add(modId)
+    return true
   })
 
   if (modsToSave.length === 0) {
@@ -245,14 +256,7 @@ async function saveSelectedMods(): Promise<void> {
 }
 
 function getModId(mod: ModSummary): string {
-  const candidates = [
-    mod.modid,
-    mod.id,
-    mod.workshop_id,
-    mod.workshopId,
-    mod.publishedfileid,
-    mod.consumer_id,
-  ]
+  const candidates = [mod.modid, mod.id, mod.workshop_id, mod.workshopId, mod.publishedfileid]
   const value = candidates.find((candidate) => {
     if (candidate === undefined || candidate === null) {
       return false
