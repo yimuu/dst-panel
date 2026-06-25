@@ -145,6 +145,7 @@ describe('mod page workflow', () => {
       img: '/mod.png',
       author: '作者',
       file_url: '/mod.zip',
+      last_time: 0.0,
       time: 1710000000,
       mod_config: '{}',
       v: '1.0',

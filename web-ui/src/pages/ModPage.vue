@@ -277,7 +277,7 @@ function formatModAuthor(mod: ModSummary): string {
 }
 
 function formatModTime(mod: ModSummary): string {
-  const lastTime = parseNumber(mod.last_time ?? mod.time)
+  const lastTime = getModLastTime(mod)
 
   if (lastTime === undefined) {
     return '未知'
@@ -295,7 +295,7 @@ function createModPayload(mod: ModSummary): ModPayload {
     img: readText(mod.img) ?? '',
     auth: formatModPayloadAuthor(mod),
     file_url: readText(mod.file_url) ?? '',
-    last_time: parseNumber(mod.last_time ?? mod.time) ?? 0,
+    last_time: getModLastTime(mod) ?? 0,
     mod_config: mod.mod_config ?? '',
     v: readText(mod.v) ?? '',
     update: mod.update ?? false,
@@ -310,6 +310,16 @@ function formatModPayloadDescription(mod: ModSummary): string {
 
 function formatModPayloadAuthor(mod: ModSummary): string {
   return readText(mod.auth) ?? readText(mod.author) ?? ''
+}
+
+function getModLastTime(mod: ModSummary): number | undefined {
+  const searchTime = parseNumber(mod.time)
+
+  if (searchTime !== undefined && searchTime !== 0) {
+    return searchTime
+  }
+
+  return parseNumber(mod.last_time)
 }
 
 function readText(value: unknown): string | undefined {
