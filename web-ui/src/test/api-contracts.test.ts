@@ -12,14 +12,16 @@ describe('API contract inventory', () => {
   })
 
   it('includes representative endpoints from each major area', () => {
-    const paths = apiContracts.map(({ path }) => path)
+    const endpoints = apiContracts.map(({ method, path }) => ({ method, path }))
 
-    expect(paths).toContain('/api/login')
-    expect(paths).toContain('/api/game/8level/status')
-    expect(paths).toContain('/api/cluster/level')
-    expect(paths).toContain('/api/game/backup')
-    expect(paths).toContain('/api/dst/config')
-    expect(paths).toContain('/api/statistics/active/user')
+    expect(endpoints).toContainEqual({ method: 'POST', path: '/api/login' })
+    expect(endpoints).toContainEqual({ method: 'GET', path: '/api/cluster' })
+    expect(endpoints).toContainEqual({ method: 'GET', path: '/api/cluster/level' })
+    expect(endpoints).toContainEqual({ method: 'GET', path: '/api/game/8level/status' })
+    expect(endpoints).toContainEqual({ method: 'GET', path: '/api/game/backup' })
+    expect(endpoints).toContainEqual({ method: 'GET', path: '/api/mod' })
+    expect(endpoints).toContainEqual({ method: 'GET', path: '/api/dst/config' })
+    expect(endpoints).toContainEqual({ method: 'GET', path: '/api/statistics/active/user' })
   })
 
   it('does not duplicate method and path pairs', () => {
