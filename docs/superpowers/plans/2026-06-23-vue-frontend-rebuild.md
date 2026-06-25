@@ -8,6 +8,8 @@
 
 **Tech Stack:** Vue 3, TypeScript, Vite, Vue Router, Pinia, Axios, Element Plus, Monaco Editor integration points, Vitest, Vue Test Utils, vue-tsc.
 
+**Execution status (2026-06-25):** The first frontend rebuild increment has been executed through `35ef1ef fix: polish vue frontend shell`. Follow-up implementation work is tracked in `docs/superpowers/plans/2026-06-24-vue-frontend-next-steps.md`.
+
 ---
 
 ## File Structure
