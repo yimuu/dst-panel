@@ -22,6 +22,18 @@ vi.mock('@/features/levels/level.api', () => ({
     code: 0,
     data: [],
   })),
+  createLevel: vi.fn(async () => ({
+    code: 0,
+    data: null,
+  })),
+  saveLevels: vi.fn(async () => ({
+    code: 0,
+    data: null,
+  })),
+  deleteLevel: vi.fn(async () => ({
+    code: 0,
+    data: null,
+  })),
 }))
 
 vi.mock('@/features/game/game.api', () => ({

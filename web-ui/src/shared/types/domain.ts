@@ -52,7 +52,7 @@ export interface LevelSummary {
   is_master?: boolean
   status?: boolean
   Ps?: Record<string, unknown>
-  server_ini?: Record<string, unknown>
+  server_ini?: Record<string, unknown> | string
   leveldataoverride?: string
   modoverrides?: string
   [key: string]: unknown
