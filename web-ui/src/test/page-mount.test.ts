@@ -24,6 +24,21 @@ vi.mock('@/features/levels/level.api', () => ({
   })),
 }))
 
+vi.mock('@/features/game/game.api', () => ({
+  getGameStatus: vi.fn(async () => ({
+    code: 0,
+    data: [],
+  })),
+  startLevel: vi.fn(async () => ({
+    code: 0,
+    data: null,
+  })),
+  stopLevel: vi.fn(async () => ({
+    code: 0,
+    data: null,
+  })),
+}))
+
 vi.mock('vue-router', async () => {
   const actual = await vi.importActual<typeof import('vue-router')>('vue-router')
 

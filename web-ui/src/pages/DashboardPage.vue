@@ -27,16 +27,22 @@ import { useLevelStore } from '@/shared/stores/levels'
 const clusterStore = useClusterStore()
 const levelStore = useLevelStore()
 
-const runningLevelCount = computed(() => levelStore.levels.filter((level) => level.status).length)
+const runningLevelCount = computed(
+  () => levelStore.runtimeLevels.filter((level) => level.status).length,
+)
 const summaryCards = computed(() => [
   { label: '运行世界', value: String(runningLevelCount.value), hint: '基于当前世界状态' },
   { label: '在线玩家', value: '--', hint: '等待玩家统计接口' },
-  { label: '世界数量', value: String(levelStore.levels.length), hint: '来自当前集群世界列表' },
+  {
+    label: '世界数量',
+    value: String(levelStore.runtimeLevels.length),
+    hint: '来自当前集群运行状态',
+  },
   { label: '备份任务', value: '--', hint: '等待备份接口' },
 ])
 
 onMounted(() => {
-  void levelStore.refreshLevels(clusterStore.selectedCluster).catch(() => undefined)
+  void levelStore.refreshRuntimeLevels(clusterStore.selectedCluster).catch(() => undefined)
 })
 </script>
 

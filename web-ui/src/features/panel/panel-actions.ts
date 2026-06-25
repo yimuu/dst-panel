@@ -21,3 +21,13 @@ export function isLevelActionDisabled(level: LevelSummary, action: PanelAction):
 
   return !level.status
 }
+
+export function getLevelActionTarget(level: LevelSummary): string {
+  const uuid = typeof level.uuid === 'string' ? level.uuid.trim() : ''
+
+  if (uuid) {
+    return uuid
+  }
+
+  return typeof level.levelName === 'string' ? level.levelName.trim() : ''
+}

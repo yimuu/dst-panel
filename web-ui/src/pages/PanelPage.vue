@@ -12,7 +12,7 @@
       <template #header>
         <div class="section-header">
           <span>当前集群</span>
-          <el-button :loading="levelStore.loading" size="small" @click="refreshLevels"
+          <el-button :loading="levelStore.runtimeLoading" size="small" @click="refreshRuntimeLevels"
             >刷新世界</el-button
           >
         </div>
@@ -23,14 +23,14 @@
           {{ selectedClusterLabel }}
         </el-descriptions-item>
         <el-descriptions-item label="世界数量">
-          {{ levelStore.levels.length }}
+          {{ levelStore.runtimeLevels.length }}
         </el-descriptions-item>
       </el-descriptions>
     </el-card>
 
     <el-card shadow="never">
       <template #header>世界状态</template>
-      <el-table :data="levelStore.levels" :empty-text="emptyText" row-key="uuid">
+      <el-table :data="levelStore.runtimeLevels" :empty-text="emptyText" row-key="uuid">
         <el-table-column label="世界" min-width="160">
           <template #default="{ row }">
             {{ formatLevelName(row) }}
@@ -49,15 +49,15 @@
           </template>
         </el-table-column>
         <el-table-column label="操作" width="220">
-          <template #default="{ row }">
+          <template #default="{ row, $index }">
             <el-button-group>
               <el-button
                 v-for="action in panelActions"
                 :key="action"
-                :disabled="isActionDisabled(row, action)"
-                :loading="isActionLoading(row, action)"
+                :disabled="isActionDisabled(row, action, $index)"
+                :loading="isActionLoading(row, action, $index)"
                 size="small"
-                @click="runLevelAction(row, action)"
+                @click="runLevelAction(row, action, $index)"
               >
                 {{ getPanelActionLabel(action) }}
               </el-button>
@@ -75,6 +75,7 @@ import { ElMessage } from 'element-plus'
 
 import { startLevel, stopLevel } from '@/features/game/game.api'
 import {
+  getLevelActionTarget,
   getPanelActionLabel,
   isLevelActionDisabled,
   type PanelAction,
@@ -92,25 +93,29 @@ const panelActions: PanelAction[] = ['start', 'stop', 'restart']
 const loadingActions = ref<Record<string, PanelAction | undefined>>({})
 
 const selectedClusterLabel = computed(() => clusterStore.selectedCluster || '未选择集群')
-const emptyText = computed(() => (levelStore.loading ? '正在加载世界列表' : '暂无世界数据'))
+const emptyText = computed(() => (levelStore.runtimeLoading ? '正在加载世界列表' : '暂无世界数据'))
 
 onMounted(() => {
-  refreshLevels()
+  refreshRuntimeLevels()
 })
 
-function refreshLevels(): void {
-  void levelStore.refreshLevels(clusterStore.selectedCluster).catch(() => undefined)
+function refreshRuntimeLevels(): void {
+  void levelStore.refreshRuntimeLevels(clusterStore.selectedCluster).catch(() => undefined)
 }
 
-async function runLevelAction(level: LevelSummary, action: PanelAction): Promise<void> {
-  const levelName = getActionLevelName(level)
+async function runLevelAction(
+  level: LevelSummary,
+  action: PanelAction,
+  rowIndex: number,
+): Promise<void> {
+  const levelName = getLevelActionTarget(level)
 
   if (!levelName) {
     ElMessage.error('缺少世界名称，无法执行操作')
     return
   }
 
-  const levelKey = getLevelKey(level)
+  const levelKey = getLevelKey(level, rowIndex)
   loadingActions.value = {
     ...loadingActions.value,
     [levelKey]: action,
@@ -123,7 +128,7 @@ async function runLevelAction(level: LevelSummary, action: PanelAction): Promise
     ElMessage.error('操作失败')
   } finally {
     try {
-      await levelStore.refreshLevels(clusterStore.selectedCluster).catch(() => undefined)
+      await levelStore.refreshRuntimeLevels(clusterStore.selectedCluster).catch(() => undefined)
     } finally {
       const nextLoadingActions = { ...loadingActions.value }
       delete nextLoadingActions[levelKey]
@@ -155,20 +160,19 @@ function assertApiSuccess(response: ApiEnvelope<unknown>): void {
   }
 }
 
-function isActionDisabled(level: LevelSummary, action: PanelAction): boolean {
-  return Boolean(loadingActions.value[getLevelKey(level)]) || isLevelActionDisabled(level, action)
+function isActionDisabled(level: LevelSummary, action: PanelAction, rowIndex: number): boolean {
+  return (
+    Boolean(loadingActions.value[getLevelKey(level, rowIndex)]) ||
+    isLevelActionDisabled(level, action)
+  )
 }
 
-function isActionLoading(level: LevelSummary, action: PanelAction): boolean {
-  return loadingActions.value[getLevelKey(level)] === action
+function isActionLoading(level: LevelSummary, action: PanelAction, rowIndex: number): boolean {
+  return loadingActions.value[getLevelKey(level, rowIndex)] === action
 }
 
-function getActionLevelName(level: LevelSummary): string {
-  return typeof level.levelName === 'string' ? level.levelName.trim() : ''
-}
-
-function getLevelKey(level: LevelSummary): string {
-  return level.uuid || level.levelName || level.name || '未命名世界'
+function getLevelKey(level: LevelSummary, rowIndex: number): string {
+  return `${rowIndex}:${getLevelActionTarget(level) || '缺少世界名称'}`
 }
 
 function formatLevelName(level: LevelSummary): string {
