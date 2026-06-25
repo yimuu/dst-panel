@@ -1,8 +1,8 @@
 <template>
   <PageState title="面板" description="管理房间、集群和服务器运行状态。">
     <el-alert
-      title="房间操作正在建设中"
-      description="启动、停止、重启和配置写入将在后续功能页接入。"
+      title="世界操作已接入"
+      description="提交启动、停止或重启后会自动刷新世界状态。"
       type="info"
       show-icon
       :closable="false"
@@ -49,11 +49,20 @@
           </template>
         </el-table-column>
         <el-table-column label="操作" width="220">
-          <el-button-group>
-            <el-button disabled size="small">启动</el-button>
-            <el-button disabled size="small">停止</el-button>
-            <el-button disabled size="small">重启</el-button>
-          </el-button-group>
+          <template #default="{ row }">
+            <el-button-group>
+              <el-button
+                v-for="action in panelActions"
+                :key="action"
+                :disabled="isActionDisabled(row, action)"
+                :loading="isActionLoading(row, action)"
+                size="small"
+                @click="runLevelAction(row, action)"
+              >
+                {{ getPanelActionLabel(action) }}
+              </el-button>
+            </el-button-group>
+          </template>
         </el-table-column>
       </el-table>
     </el-card>
@@ -61,8 +70,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { ElMessage } from 'element-plus'
 
+import { startLevel, stopLevel } from '@/features/game/game.api'
+import {
+  getPanelActionLabel,
+  isLevelActionDisabled,
+  type PanelAction,
+} from '@/features/panel/panel-actions'
+import { isApiSuccess } from '@/shared/api/http'
+import type { ApiEnvelope } from '@/shared/api/types'
 import PageState from '@/shared/components/PageState.vue'
 import { useClusterStore } from '@/shared/stores/cluster'
 import { useLevelStore } from '@/shared/stores/levels'
@@ -70,6 +88,8 @@ import type { LevelSummary } from '@/shared/types/domain'
 
 const clusterStore = useClusterStore()
 const levelStore = useLevelStore()
+const panelActions: PanelAction[] = ['start', 'stop', 'restart']
+const loadingActions = ref<Record<string, PanelAction | undefined>>({})
 
 const selectedClusterLabel = computed(() => clusterStore.selectedCluster || '未选择集群')
 const emptyText = computed(() => (levelStore.loading ? '正在加载世界列表' : '暂无世界数据'))
@@ -80,6 +100,75 @@ onMounted(() => {
 
 function refreshLevels(): void {
   void levelStore.refreshLevels(clusterStore.selectedCluster).catch(() => undefined)
+}
+
+async function runLevelAction(level: LevelSummary, action: PanelAction): Promise<void> {
+  const levelName = getActionLevelName(level)
+
+  if (!levelName) {
+    ElMessage.error('缺少世界名称，无法执行操作')
+    return
+  }
+
+  const levelKey = getLevelKey(level)
+  loadingActions.value = {
+    ...loadingActions.value,
+    [levelKey]: action,
+  }
+
+  try {
+    await submitLevelAction(levelName, action)
+    ElMessage.success('操作已提交')
+  } catch {
+    ElMessage.error('操作失败')
+  } finally {
+    try {
+      await levelStore.refreshLevels(clusterStore.selectedCluster).catch(() => undefined)
+    } finally {
+      const nextLoadingActions = { ...loadingActions.value }
+      delete nextLoadingActions[levelKey]
+      loadingActions.value = nextLoadingActions
+    }
+  }
+}
+
+async function submitLevelAction(levelName: string, action: PanelAction): Promise<void> {
+  const cluster = clusterStore.selectedCluster
+
+  if (action === 'start') {
+    assertApiSuccess(await startLevel(levelName, cluster))
+    return
+  }
+
+  if (action === 'stop') {
+    assertApiSuccess(await stopLevel(levelName, cluster))
+    return
+  }
+
+  assertApiSuccess(await stopLevel(levelName, cluster))
+  assertApiSuccess(await startLevel(levelName, cluster))
+}
+
+function assertApiSuccess(response: ApiEnvelope<unknown>): void {
+  if (!isApiSuccess(response)) {
+    throw new Error(response.msg || response.message || '操作失败')
+  }
+}
+
+function isActionDisabled(level: LevelSummary, action: PanelAction): boolean {
+  return Boolean(loadingActions.value[getLevelKey(level)]) || isLevelActionDisabled(level, action)
+}
+
+function isActionLoading(level: LevelSummary, action: PanelAction): boolean {
+  return loadingActions.value[getLevelKey(level)] === action
+}
+
+function getActionLevelName(level: LevelSummary): string {
+  return typeof level.levelName === 'string' ? level.levelName.trim() : ''
+}
+
+function getLevelKey(level: LevelSummary): string {
+  return level.uuid || level.levelName || level.name || '未命名世界'
 }
 
 function formatLevelName(level: LevelSummary): string {

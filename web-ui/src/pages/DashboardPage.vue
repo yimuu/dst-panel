@@ -18,14 +18,26 @@
 </template>
 
 <script setup lang="ts">
-import PageState from '@/shared/components/PageState.vue'
+import { computed, onMounted } from 'vue'
 
-const summaryCards = [
-  { label: '集群状态', value: '待接入', hint: '等待服务端状态接口' },
+import PageState from '@/shared/components/PageState.vue'
+import { useClusterStore } from '@/shared/stores/cluster'
+import { useLevelStore } from '@/shared/stores/levels'
+
+const clusterStore = useClusterStore()
+const levelStore = useLevelStore()
+
+const runningLevelCount = computed(() => levelStore.levels.filter((level) => level.status).length)
+const summaryCards = computed(() => [
+  { label: '运行世界', value: String(runningLevelCount.value), hint: '基于当前世界状态' },
   { label: '在线玩家', value: '--', hint: '等待玩家统计接口' },
-  { label: '世界数量', value: '--', hint: '等待世界列表接口' },
+  { label: '世界数量', value: String(levelStore.levels.length), hint: '来自当前集群世界列表' },
   { label: '备份任务', value: '--', hint: '等待备份接口' },
-]
+])
+
+onMounted(() => {
+  void levelStore.refreshLevels(clusterStore.selectedCluster).catch(() => undefined)
+})
 </script>
 
 <style scoped>
