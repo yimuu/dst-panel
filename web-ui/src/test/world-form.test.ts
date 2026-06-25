@@ -82,6 +82,60 @@ describe('world form', () => {
     })
   })
 
+  it.each(['', 'abc', '-1', '1.5', '1e3', '0x10'])(
+    'falls back to the default port for invalid INI server_port %j',
+    (serverPort) => {
+      expect(
+        normalizeWorldForm({
+          levelName: '森林',
+          uuid: 'Master',
+          is_master: true,
+          server_ini: `[NETWORK]\nserver_port = ${serverPort}`,
+          leveldataoverride: '',
+          modoverrides: '',
+        }),
+      ).toMatchObject({
+        server_ini: {
+          server_port: 10999,
+        },
+      })
+    },
+  )
+
+  it('accepts JSON decimal numeric strings for server.ini numeric fields', () => {
+    expect(
+      normalizeWorldForm({
+        levelName: '森林',
+        uuid: 'Master',
+        is_master: true,
+        server_ini: '{ "server_port": "11001" }',
+        leveldataoverride: '',
+        modoverrides: '',
+      }),
+    ).toMatchObject({
+      server_ini: {
+        server_port: 11001,
+      },
+    })
+  })
+
+  it('falls back to the default port for invalid JSON numeric values', () => {
+    expect(
+      normalizeWorldForm({
+        levelName: '森林',
+        uuid: 'Master',
+        is_master: true,
+        server_ini: '{ "server_port": 1.5 }',
+        leveldataoverride: '',
+        modoverrides: '',
+      }),
+    ).toMatchObject({
+      server_ini: {
+        server_port: 10999,
+      },
+    })
+  })
+
   it('throws a Chinese error for invalid JSON server.ini text', () => {
     expect(() =>
       normalizeWorldForm({

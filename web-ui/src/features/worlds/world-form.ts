@@ -139,15 +139,19 @@ function mergeServerIni(
 }
 
 function toNumber(value: unknown, fallback: number): number {
-  if (typeof value === 'number' && Number.isFinite(value)) {
+  if (typeof value === 'number' && Number.isSafeInteger(value) && value >= 0) {
     return value
   }
 
   if (typeof value === 'string') {
-    const parsed = Number(value.trim())
+    const trimmedValue = value.trim()
 
-    if (Number.isFinite(parsed)) {
-      return parsed
+    if (/^\d+$/.test(trimmedValue)) {
+      const parsed = Number(trimmedValue)
+
+      if (Number.isSafeInteger(parsed)) {
+        return parsed
+      }
     }
   }
 
