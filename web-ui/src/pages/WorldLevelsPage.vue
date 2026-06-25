@@ -77,8 +77,18 @@
             <el-input v-model="worldForm.levelName" placeholder="例如：森林" />
           </el-form-item>
           <el-form-item label="分片标识" required>
-            <el-input v-model="worldForm.uuid" placeholder="Master" />
-            <div class="form-help">例如：Master、Caves。用于分片目录和保存接口。</div>
+            <el-input
+              v-model="worldForm.uuid"
+              :disabled="dialogMode === 'edit'"
+              placeholder="Master"
+            />
+            <div class="form-help">
+              {{
+                dialogMode === 'edit'
+                  ? '编辑时不能修改分片标识；如需新分片请使用复制'
+                  : '例如：Master、Caves。用于分片目录和保存接口。'
+              }}
+            </div>
           </el-form-item>
         </div>
 
@@ -192,10 +202,25 @@ function openCopyDialog(level: LevelSummary): void {
 }
 
 async function saveWorldForm(): Promise<void> {
-  const payload = normalizeWorldForm(worldForm)
+  let payload
+
+  try {
+    payload = normalizeWorldForm({
+      ...worldForm,
+      uuid: dialogMode.value === 'edit' ? editingUuid.value : worldForm.uuid,
+    })
+  } catch (error) {
+    ElMessage.error(getErrorMessage(error, 'server.ini 格式无效'))
+    return
+  }
 
   if (!payload.levelName || !payload.uuid) {
     ElMessage.error('请填写世界显示名和分片标识')
+    return
+  }
+
+  if (dialogMode.value === 'create' && hasDuplicateUuid(payload.uuid)) {
+    ElMessage.error('分片标识已存在')
     return
   }
 
@@ -286,6 +311,10 @@ function stringifyConfig(value: unknown): string {
 
 function getLevelUuid(level: LevelSummary): string {
   return level.uuid || ''
+}
+
+function hasDuplicateUuid(uuid: string): boolean {
+  return levelStore.levels.some((level) => getLevelUuid(level) === uuid)
 }
 
 function createCopyLevelName(name: string): string {

@@ -45,6 +45,16 @@ export interface ClusterSummary {
   [key: string]: unknown
 }
 
+export interface ServerIniPayload {
+  server_port: number
+  is_master: boolean
+  name: string
+  id: number
+  encode_user_path: boolean
+  authentication_port: number
+  master_server_port: number
+}
+
 export interface LevelSummary {
   levelName?: string
   name?: string
@@ -52,7 +62,7 @@ export interface LevelSummary {
   is_master?: boolean
   status?: boolean
   Ps?: Record<string, unknown>
-  server_ini?: Record<string, unknown> | string
+  server_ini?: ServerIniPayload
   leveldataoverride?: string
   modoverrides?: string
   [key: string]: unknown
