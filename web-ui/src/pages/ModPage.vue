@@ -69,7 +69,7 @@
         <el-table-column label="模组" min-width="240">
           <template #default="{ row }">
             <div class="mod-name">{{ formatModName(row) }}</div>
-            <div class="mod-description">{{ row.description || '暂无简介' }}</div>
+            <div class="mod-description">{{ formatModDescription(row) }}</div>
           </template>
         </el-table-column>
         <el-table-column label="创意工坊 ID" min-width="140">
@@ -79,7 +79,7 @@
         </el-table-column>
         <el-table-column label="作者" min-width="140">
           <template #default="{ row }">
-            {{ row.auth || '未知' }}
+            {{ formatModAuthor(row) }}
           </template>
         </el-table-column>
         <el-table-column label="版本" width="120">
@@ -89,7 +89,7 @@
         </el-table-column>
         <el-table-column label="更新时间" min-width="160">
           <template #default="{ row }">
-            {{ formatLastTime(row.last_time) }}
+            {{ formatModTime(row) }}
           </template>
         </el-table-column>
       </el-table>
@@ -112,7 +112,7 @@
         <el-table-column label="模组" min-width="240">
           <template #default="{ row }">
             <div class="mod-name">{{ formatModName(row) }}</div>
-            <div class="mod-description">{{ row.description || '暂无简介' }}</div>
+            <div class="mod-description">{{ formatModDescription(row) }}</div>
           </template>
         </el-table-column>
         <el-table-column label="创意工坊 ID" min-width="140">
@@ -122,7 +122,7 @@
         </el-table-column>
         <el-table-column label="作者" min-width="140">
           <template #default="{ row }">
-            {{ row.auth || '未知' }}
+            {{ formatModAuthor(row) }}
           </template>
         </el-table-column>
         <el-table-column label="状态" width="120">
@@ -248,7 +248,6 @@ function getModId(mod: ModSummary): string {
   const candidates = [
     mod.modid,
     mod.id,
-    mod.ID,
     mod.workshop_id,
     mod.workshopId,
     mod.publishedfileid,
@@ -269,29 +268,65 @@ function formatModName(mod: ModSummary): string {
   return mod.name || getModId(mod) || '未命名模组'
 }
 
-function formatLastTime(value: unknown): string {
-  if (typeof value !== 'number' || Number.isNaN(value)) {
+function formatModDescription(mod: ModSummary): string {
+  return readText(mod.description) ?? readText(mod.desc) ?? '暂无简介'
+}
+
+function formatModAuthor(mod: ModSummary): string {
+  return readText(mod.auth) ?? readText(mod.author) ?? '未知'
+}
+
+function formatModTime(mod: ModSummary): string {
+  const lastTime = parseNumber(mod.last_time ?? mod.time)
+
+  if (lastTime === undefined) {
     return '未知'
   }
 
-  const timestamp = value > 10_000_000_000 ? value : value * 1000
+  const timestamp = lastTime > 10_000_000_000 ? lastTime : lastTime * 1000
   return new Date(timestamp).toLocaleString('zh-CN', { hour12: false })
 }
 
 function createModPayload(mod: ModSummary): ModPayload {
   return {
-    ...mod,
     modid: getModId(mod),
-    name: mod.name,
-    description: mod.description,
-    img: mod.img,
-    auth: mod.auth,
-    file_url: mod.file_url,
-    last_time: mod.last_time,
-    mod_config: mod.mod_config,
-    v: mod.v,
-    update: mod.update,
+    name: readText(mod.name) ?? '',
+    description: formatModPayloadDescription(mod),
+    img: readText(mod.img) ?? '',
+    auth: formatModPayloadAuthor(mod),
+    file_url: readText(mod.file_url) ?? '',
+    last_time: parseNumber(mod.last_time ?? mod.time) ?? 0,
+    mod_config: mod.mod_config ?? '',
+    v: readText(mod.v) ?? '',
+    update: mod.update ?? false,
+    consumer_appid: mod.consumer_appid ?? 0,
+    creator_appid: mod.creator_appid ?? 0,
   }
+}
+
+function formatModPayloadDescription(mod: ModSummary): string {
+  return readText(mod.description) ?? readText(mod.desc) ?? ''
+}
+
+function formatModPayloadAuthor(mod: ModSummary): string {
+  return readText(mod.auth) ?? readText(mod.author) ?? ''
+}
+
+function readText(value: unknown): string | undefined {
+  return typeof value === 'string' && value.length > 0 ? value : undefined
+}
+
+function parseNumber(value: unknown): number | undefined {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value
+  }
+
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    return undefined
+  }
+
+  const numericValue = Number(value)
+  return Number.isFinite(numericValue) ? numericValue : undefined
 }
 
 function normalizePageData(

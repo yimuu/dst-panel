@@ -139,13 +139,13 @@ describe('mod page workflow', () => {
       name: '已保存模组',
     }
     const newMod: ModSummary = {
-      modid: '2',
+      id: '2',
       name: '新模组',
-      description: '新模组说明',
+      desc: '新模组说明',
       img: '/mod.png',
-      auth: '作者',
+      author: '作者',
       file_url: '/mod.zip',
-      last_time: 1710000000,
+      time: 1710000000,
       mod_config: '{}',
       v: '1.0',
       update: true,
@@ -161,6 +161,9 @@ describe('mod page workflow', () => {
     await searchInput().setValue('几何')
     await findButton('搜索').trigger('click')
     await flushPromises()
+
+    expect(wrapper?.text()).toContain('新模组说明')
+    expect(wrapper?.text()).toContain('作者')
 
     await wrapper?.find('[data-test="mod-result-toggle-1"]').trigger('click')
     await wrapper?.find('[data-test="mod-result-toggle-2"]').trigger('click')
@@ -182,6 +185,8 @@ describe('mod page workflow', () => {
         update: true,
       }),
     )
+    expect(saveModInfo.mock.calls[0]?.[0]).not.toHaveProperty('id')
+    expect(saveModInfo.mock.calls[0]?.[0]).not.toHaveProperty('ID')
     expect(listMods).toHaveBeenCalledTimes(2)
   })
 })
