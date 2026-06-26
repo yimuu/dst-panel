@@ -103,6 +103,45 @@ describe('backup page workflow', () => {
     expect(wrapper?.text()).toContain('1.0 MB')
   })
 
+  it('renders display-only names without enabling backup actions', async () => {
+    mountBackupPage([
+      {
+        name: 'display-only.zip',
+        fileSize: 1024,
+      },
+    ])
+    await flushPromises()
+
+    const restoreButton = findButton('恢复')
+    const deleteButton = findButton('删除')
+
+    expect(wrapper?.text()).toContain('display-only.zip')
+    expect(restoreButton.element.disabled).toBe(true)
+    expect(deleteButton.element.disabled).toBe(true)
+
+    await restoreButton.trigger('click')
+    await deleteButton.trigger('click')
+    await flushPromises()
+
+    expect(confirmMessageBox).not.toHaveBeenCalled()
+    expect(restoreBackup).not.toHaveBeenCalled()
+    expect(deleteBackups).not.toHaveBeenCalled()
+  })
+
+  it('preserves zero byte file sizes before falling back to size', async () => {
+    mountBackupPage([
+      {
+        fileName: 'empty.zip',
+        fileSize: 0,
+        size: 1048576,
+      },
+    ])
+    await flushPromises()
+
+    expect(wrapper?.text()).toContain('0 B')
+    expect(wrapper?.text()).not.toContain('1.0 MB')
+  })
+
   it('creates a backup and reloads the list', async () => {
     mountBackupPage([])
     await flushPromises()

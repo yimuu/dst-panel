@@ -20,11 +20,11 @@
         v-loading="loading"
         :data="backups"
         :empty-text="emptyText"
-        :row-key="getBackupFileName"
+        :row-key="getBackupDisplayName"
       >
         <el-table-column label="文件名" min-width="220">
           <template #default="{ row }">
-            {{ getBackupFileName(row) || '未命名备份' }}
+            {{ getBackupDisplayName(row) }}
           </template>
         </el-table-column>
         <el-table-column label="大小" width="120">
@@ -41,7 +41,7 @@
           <template #default="{ row }">
             <el-button-group>
               <el-button
-                :disabled="!getBackupFileName(row)"
+                :disabled="!getBackupActionFileName(row)"
                 :loading="isRestoring(row)"
                 size="small"
                 @click="confirmRestoreBackup(row)"
@@ -49,7 +49,7 @@
                 {{ getBackupActionLabel('restore') }}
               </el-button>
               <el-button
-                :disabled="!getBackupFileName(row)"
+                :disabled="!getBackupActionFileName(row)"
                 :loading="isDeleting(row)"
                 size="small"
                 type="danger"
@@ -125,7 +125,7 @@ async function handleCreateBackup(): Promise<void> {
 }
 
 async function confirmRestoreBackup(backup: BackupFile): Promise<void> {
-  const fileName = getBackupFileName(backup)
+  const fileName = getBackupActionFileName(backup)
 
   if (!fileName) {
     ElMessage.error('缺少备份文件名，无法恢复')
@@ -156,7 +156,7 @@ async function confirmRestoreBackup(backup: BackupFile): Promise<void> {
 }
 
 async function confirmDeleteBackup(backup: BackupFile): Promise<void> {
-  const fileName = getBackupFileName(backup)
+  const fileName = getBackupActionFileName(backup)
 
   if (!fileName) {
     ElMessage.error('缺少备份文件名，无法删除')
@@ -186,12 +186,16 @@ async function confirmDeleteBackup(backup: BackupFile): Promise<void> {
   }
 }
 
-function getBackupFileName(backup: BackupFile): string {
-  return backup.fileName || backup.name || ''
+function getBackupDisplayName(backup: BackupFile): string {
+  return backup.fileName || backup.name || '未命名备份'
+}
+
+function getBackupActionFileName(backup: BackupFile): string {
+  return backup.fileName || ''
 }
 
 function getBackupSize(backup: BackupFile): number {
-  return backup.fileSize || backup.size || 0
+  return backup.fileSize ?? backup.size ?? 0
 }
 
 function formatBackupTime(backup: BackupFile): string {
@@ -229,11 +233,11 @@ function parseBackupTimestamp(value: number | string): number | undefined {
 }
 
 function isRestoring(backup: BackupFile): boolean {
-  return restoringFile.value === getBackupFileName(backup)
+  return restoringFile.value === getBackupActionFileName(backup)
 }
 
 function isDeleting(backup: BackupFile): boolean {
-  return deletingFile.value === getBackupFileName(backup)
+  return deletingFile.value === getBackupActionFileName(backup)
 }
 
 function readApiData<T>(response: ApiEnvelope<T>, fallbackMessage: string): T {
