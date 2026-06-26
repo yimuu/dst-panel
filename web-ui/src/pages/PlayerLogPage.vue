@@ -165,11 +165,16 @@ function connectStream(): void {
 
   const source = new EventSource(buildGameLogStreamPath(normalizedLevelName.value))
   const logListener = ((event: MessageEvent<string>) => {
+    streamError.value = ''
     appendLogRow(event.data)
   }) as EventListener
+  const openListener = () => {
+    streamError.value = ''
+  }
 
   source.addEventListener('log', logListener)
   source.addEventListener('message', logListener)
+  source.addEventListener('open', openListener)
   source.onerror = () => {
     streamError.value = '日志流连接异常，正在等待重试'
   }
@@ -177,6 +182,7 @@ function connectStream(): void {
   removeStreamListeners = () => {
     source.removeEventListener('log', logListener)
     source.removeEventListener('message', logListener)
+    source.removeEventListener('open', openListener)
   }
   stream.value = source
 }

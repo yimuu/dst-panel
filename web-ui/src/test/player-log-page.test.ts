@@ -12,6 +12,7 @@ class MockEventSource {
 
   readonly url: string
   readonly close = vi.fn()
+  onerror: ((event: Event) => void) | null = null
   private readonly listeners: Partial<Record<string, EventListener[]>> = {}
 
   constructor(url: string | URL) {
@@ -33,6 +34,10 @@ class MockEventSource {
     for (const listener of this.listeners[type] ?? []) {
       listener(new MessageEvent(type, { data }))
     }
+  }
+
+  emitError(): void {
+    this.onerror?.(new Event('error'))
   }
 }
 
@@ -137,5 +142,25 @@ describe('player log page stream', () => {
     expect(wrapper?.findAll('[data-test="log-row"]')).toHaveLength(1)
     expect(wrapper?.text()).toContain('line-1004')
     expect(wrapper?.text()).not.toContain('line-1003')
+  })
+
+  it('clears stale stream warnings when logs resume after reconnect', async () => {
+    mountPlayerLogPage()
+
+    await findButton('连接').trigger('click')
+    await flushPromises()
+
+    const stream = MockEventSource.instances[0]
+
+    stream?.emitError()
+    await nextTick()
+
+    expect(wrapper?.text()).toContain('日志流连接异常，正在等待重试')
+
+    stream?.emit('log', 'player joined')
+    await nextTick()
+
+    expect(wrapper?.text()).not.toContain('日志流连接异常，正在等待重试')
+    expect(wrapper?.text()).toContain('player joined')
   })
 })
