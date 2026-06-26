@@ -15,6 +15,7 @@ describe('admin menu', () => {
     expect(paths).toContain('/levels/levels')
     expect(paths).toContain(routes.selectorMod)
     expect(paths).toContain(routes.preinstall)
+    expect(paths).toContain(routes.genMap)
     expect(paths).toContain('/mod')
     expect(paths).toContain('/backup')
     expect(paths).toContain('/setting')
@@ -44,17 +45,25 @@ describe('admin menu', () => {
       routes.levels,
       routes.selectorMod,
       routes.preinstall,
+      routes.genMap,
     ])
     expect(worldMenu?.children?.map((item) => item.label)).toEqual([
       '世界列表',
       '选择模组',
       '预设模板',
+      '地图预览',
     ])
   })
 
-  it('hides unfinished routes from the navigation menu', () => {
+  it('has no hidden routes left from the rebuilt room and world workflows', () => {
     const paths = JSON.stringify(adminMenuItems)
 
-    expect(paths).not.toContain(routes.genMap)
+    expect(paths).toContain(routes.clusterIni)
+    expect(paths).toContain(routes.adminlist)
+    expect(paths).toContain(routes.whitelist)
+    expect(paths).toContain(routes.blacklist)
+    expect(paths).toContain(routes.selectorMod)
+    expect(paths).toContain(routes.preinstall)
+    expect(paths).toContain(routes.genMap)
   })
 })

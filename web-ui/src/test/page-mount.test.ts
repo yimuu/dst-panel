@@ -20,6 +20,7 @@ import SettingsPage from '@/pages/SettingsPage.vue'
 import UserProfilePage from '@/pages/UserProfilePage.vue'
 import WorldLevelsPage from '@/pages/WorldLevelsPage.vue'
 import WorldModSelectionPage from '@/pages/WorldModSelectionPage.vue'
+import MapPreviewPage from '@/pages/MapPreviewPage.vue'
 
 vi.mock('@/features/backups/backup.api', () => ({
   listBackups: vi.fn(async () => ({
@@ -143,6 +144,28 @@ vi.mock('@/features/mods/mod.api', () => ({
   })),
 }))
 
+vi.mock('@/features/maps/map.api', async () => {
+  const actual = await vi.importActual<typeof import('@/features/maps/map.api')>(
+    '@/features/maps/map.api',
+  )
+
+  return {
+    ...actual,
+    generateMap: vi.fn(async () => ({
+      code: 0,
+      data: null,
+    })),
+    checkWalrusHutPlains: vi.fn(async () => ({
+      code: 0,
+      data: false,
+    })),
+    getSessionFile: vi.fn(async () => ({
+      code: 0,
+      data: '',
+    })),
+  }
+})
+
 vi.mock('@/features/settings/settings.api', () => ({
   getDstConfig: vi.fn(async () => ({
     code: 0,
@@ -227,6 +250,7 @@ const routePages: Array<[string, Component, Record<string, unknown>?]> = [
   ['世界页', WorldLevelsPage],
   ['选择模组页', WorldModSelectionPage],
   ['预设模板页', PreinstallPage],
+  ['地图预览页', MapPreviewPage],
   ['模组页', ModPage],
   ['备份页', BackupPage],
   ['设置页', SettingsPage],

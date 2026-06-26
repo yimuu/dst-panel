@@ -71,6 +71,10 @@ export const adminMenuItems: AdminMenuItem[] = [
         path: routes.preinstall,
         label: '预设模板',
       },
+      {
+        path: routes.genMap,
+        label: '地图预览',
+      },
     ],
   },
   {

@@ -9,6 +9,7 @@ import FeatureUnavailablePage from '@/pages/FeatureUnavailablePage.vue'
 import HelpPage from '@/pages/HelpPage.vue'
 import InitPage from '@/pages/InitPage.vue'
 import LobbyPage from '@/pages/LobbyPage.vue'
+import MapPreviewPage from '@/pages/MapPreviewPage.vue'
 import LoginPage from '@/pages/LoginPage.vue'
 import ModPage from '@/pages/ModPage.vue'
 import PanelPage from '@/pages/PanelPage.vue'
@@ -103,7 +104,7 @@ const adminRoutes: RouteRecordRaw[] = [
   {
     path: appRoutes.genMap.slice(1),
     name: 'levels-genMap',
-    component: FeatureUnavailablePage,
+    component: MapPreviewPage,
   },
   {
     path: appRoutes.mod.slice(1),

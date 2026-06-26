@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { createAppRouter } from '@/app/router'
 import ClusterIniPage from '@/pages/ClusterIniPage.vue'
 import FeatureUnavailablePage from '@/pages/FeatureUnavailablePage.vue'
+import MapPreviewPage from '@/pages/MapPreviewPage.vue'
 import PlayerListPage from '@/pages/PlayerListPage.vue'
 import PreinstallPage from '@/pages/PreinstallPage.vue'
 import WorldModSelectionPage from '@/pages/WorldModSelectionPage.vue'
@@ -54,14 +55,28 @@ describe('unfinished admin routes', () => {
     )
   })
 
-  it('route to an explicit unavailable page instead of unrelated business pages', () => {
+  it('routes completed map preview page to the real page', () => {
     const router = createAppRouter()
-    const unfinishedRoutes = [
+
+    expect(router.resolve(routes.genMap).matched.at(-1)?.components?.default).toBe(MapPreviewPage)
+  })
+
+  it('does not leave rebuilt workflow routes on the unavailable page', () => {
+    const router = createAppRouter()
+    const rebuiltRoutes = [
+      routes.clusterIni,
+      routes.adminlist,
+      routes.whitelist,
+      routes.blacklist,
+      routes.selectorMod,
+      routes.preinstall,
       routes.genMap,
     ]
 
-    for (const path of unfinishedRoutes) {
-      expect(router.resolve(path).matched.at(-1)?.components?.default).toBe(FeatureUnavailablePage)
+    for (const path of rebuiltRoutes) {
+      expect(router.resolve(path).matched.at(-1)?.components?.default).not.toBe(
+        FeatureUnavailablePage,
+      )
     }
   })
 })
