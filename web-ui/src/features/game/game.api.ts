@@ -44,3 +44,8 @@ export function sendGameCommand(
 export function getSystemInfo(cluster?: string): Promise<ApiEnvelope<Record<string, unknown>>> {
   return apiGet('/api/game/system/info', withCluster(cluster))
 }
+
+export function buildGameLogStreamPath(levelName: string): string {
+  const params = new URLSearchParams({ levelName })
+  return `/api/game/log/stream?${params.toString()}`
+}
