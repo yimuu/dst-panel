@@ -15,6 +15,25 @@ export default defineConfig({
   build: {
     outDir: '../dist',
     emptyOutDir: true,
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            {
+              name: 'vue',
+              test: /node_modules[\\/](vue|vue-router|pinia)[\\/]/,
+              priority: 2,
+            },
+            {
+              name: 'element',
+              test: /node_modules[\\/](element-plus|@element-plus)[\\/]/,
+              priority: 1,
+              maxSize: 450 * 1024,
+            },
+          ],
+        },
+      },
+    },
   },
   server: {
     port: 5173,
