@@ -139,6 +139,30 @@ describe('support pages', () => {
     })
   })
 
+  it('reloads DST config after save so fallback-backed fields show backend values', async () => {
+    getDstConfig
+      .mockResolvedValueOnce(success(dstConfigFixture))
+      .mockResolvedValueOnce(success(dstConfigFixture))
+
+    mountPage(SettingsPage)
+    await flushPromises()
+
+    const forceInstallInput = wrapper?.find<HTMLInputElement>(
+      '[data-test="force-install-dir-input"] input',
+    )
+
+    await forceInstallInput?.setValue('')
+    await findButton('保存设置').trigger('click')
+    await flushPromises()
+
+    expect(saveDstConfig).toHaveBeenCalledWith({
+      ...dstConfigFixture,
+      force_install_dir: '',
+    })
+    expect(getDstConfig).toHaveBeenCalledTimes(2)
+    expect(forceInstallInput?.element.value).toBe('/srv/dst')
+  })
+
   it('changes the current user password with the supported payload', async () => {
     mountPage(UserProfilePage)
     useAuthStore().user = {

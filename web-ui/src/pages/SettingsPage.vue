@@ -170,7 +170,7 @@ async function handleSave(): Promise<void> {
   try {
     const payload = normalizeDstConfig(form)
     assertApiSuccess(await saveDstConfig(payload))
-    Object.assign(form, payload)
+    await loadSettings()
     ElMessage.success('设置已保存')
   } catch (error) {
     ElMessage.error(getErrorMessage(error, '设置保存失败'))
