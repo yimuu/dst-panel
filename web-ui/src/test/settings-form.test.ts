@@ -2,12 +2,27 @@ import { describe, expect, it } from 'vitest'
 
 import {
   createEmptyDstConfig,
+  normalizePanelSettings,
   normalizeDstConfig,
   prepareDstConfigForSave,
   validateDstConfig,
 } from '@/features/settings/settings-form'
 
 describe('settings form', () => {
+  it('normalizes whitespace in panel settings fields', () => {
+    expect(
+      normalizePanelSettings({
+        panelName: '  猎人面板  ',
+        enableRegister: true,
+        steamApiKey: '  key  ',
+      }),
+    ).toEqual({
+      panelName: '猎人面板',
+      enableRegister: true,
+      steamApiKey: 'key',
+    })
+  })
+
   it('creates an empty DstConfig with safe defaults', () => {
     expect(createEmptyDstConfig()).toEqual({
       steamcmd: '',
@@ -84,6 +99,23 @@ describe('settings form', () => {
     const config = createEmptyDstConfig()
 
     expect(validateDstConfig(config)).toBe('请填写 SteamCMD 目录')
+  })
+
+  it('treats whitespace-only required fields as missing', () => {
+    const baseConfig = {
+      ...createEmptyDstConfig(),
+      steamcmd: '/opt/steamcmd',
+      force_install_dir: '/srv/dst',
+      cluster: 'Cluster_1',
+      backup: '/srv/backup',
+      mod_download_path: '/srv/mods',
+    }
+
+    expect(validateDstConfig({ ...baseConfig, steamcmd: '   ' })).toBe('请填写 SteamCMD 目录')
+    expect(validateDstConfig({ ...baseConfig, force_install_dir: '   ' })).toBe('请填写游戏安装目录')
+    expect(validateDstConfig({ ...baseConfig, cluster: '   ' })).toBe('请填写集群名称')
+    expect(validateDstConfig({ ...baseConfig, backup: '   ' })).toBe('请填写备份目录')
+    expect(validateDstConfig({ ...baseConfig, mod_download_path: '   ' })).toBe('请填写模组下载目录')
   })
 
   it('validates bin and beta instead of silently coercing submitted values', () => {

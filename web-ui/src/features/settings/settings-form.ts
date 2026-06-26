@@ -79,11 +79,11 @@ export function prepareDstConfigForSave(config: Partial<DstConfig>): DstConfig {
 }
 
 export function validateDstConfig(config: DstConfig): string | null {
-  if (!config.steamcmd) return '请填写 SteamCMD 目录'
-  if (!config.force_install_dir) return '请填写游戏安装目录'
-  if (!config.cluster) return '请填写集群名称'
-  if (!config.backup) return '请填写备份目录'
-  if (!config.mod_download_path) return '请填写模组下载目录'
+  if (!config.steamcmd.trim()) return '请填写 SteamCMD 目录'
+  if (!config.force_install_dir.trim()) return '请填写游戏安装目录'
+  if (!config.cluster.trim()) return '请填写集群名称'
+  if (!config.backup.trim()) return '请填写备份目录'
+  if (!config.mod_download_path.trim()) return '请填写模组下载目录'
   if (config.bin !== 32 && config.bin !== 64) return '运行位数必须是 32 或 64'
   if (config.beta !== 0 && config.beta !== 1) return '测试分支必须是关闭或开启'
 
