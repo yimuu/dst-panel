@@ -8,6 +8,7 @@ export interface UserProfile {
   avatar?: string
   token?: string
   createdAt?: string
+  created_at?: string
   updatedAt?: string
   [key: string]: unknown
 }
