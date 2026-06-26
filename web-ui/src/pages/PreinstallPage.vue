@@ -32,12 +32,13 @@
 
 <script setup lang="ts">
 import { Upload } from '@element-plus/icons-vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { ref } from 'vue'
 
 import { applyPreinstallTemplate } from '@/features/game/game.api'
 import { assertApiSuccess, getErrorMessage } from '@/shared/api/envelope'
 import PageState from '@/shared/components/PageState.vue'
+import { confirmAction } from '@/shared/ui/confirm'
 
 const templateName = ref('default')
 const saving = ref(false)
@@ -45,17 +46,15 @@ const saving = ref(false)
 async function handleApply(): Promise<void> {
   const name = templateName.value.trim() || 'default'
 
-  try {
-    await ElMessageBox.confirm(
-      '应用预设会停止服务器、保存世界、创建备份并替换当前集群文件。确定继续？',
-      '应用预设模板',
-      {
-        cancelButtonText: '取消',
-        confirmButtonText: '应用模板',
-        type: 'warning',
-      },
-    )
-  } catch {
+  const confirmed = await confirmAction(
+    '应用预设会停止服务器、保存世界、创建备份并替换当前集群文件。确定继续？',
+    '应用预设模板',
+    {
+      confirmButtonText: '应用模板',
+    },
+  )
+
+  if (!confirmed) {
     return
   }
 

@@ -114,7 +114,7 @@
 
 <script setup lang="ts">
 import { Download, Edit, Plus, Upload } from '@element-plus/icons-vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 
 import {
@@ -130,6 +130,7 @@ import { formatBackupSize, getBackupActionLabel } from '@/features/backups/backu
 import { assertApiSuccess, getErrorMessage, readApiData } from '@/shared/api/envelope'
 import PageState from '@/shared/components/PageState.vue'
 import type { BackupFile } from '@/shared/types/domain'
+import { confirmAction } from '@/shared/ui/confirm'
 
 const backups = ref<BackupFile[]>([])
 const loading = ref(false)
@@ -249,13 +250,11 @@ async function confirmRestoreBackup(backup: BackupFile): Promise<void> {
     return
   }
 
-  try {
-    await ElMessageBox.confirm(`确定恢复备份「${fileName}」吗？`, '恢复备份', {
-      cancelButtonText: '取消',
-      confirmButtonText: getBackupActionLabel('restore'),
-      type: 'warning',
-    })
-  } catch {
+  const confirmed = await confirmAction(`确定恢复备份「${fileName}」吗？`, '恢复备份', {
+    confirmButtonText: getBackupActionLabel('restore'),
+  })
+
+  if (!confirmed) {
     return
   }
 
@@ -280,13 +279,11 @@ async function confirmDeleteBackup(backup: BackupFile): Promise<void> {
     return
   }
 
-  try {
-    await ElMessageBox.confirm(`确定删除备份「${fileName}」吗？`, '删除备份', {
-      cancelButtonText: '取消',
-      confirmButtonText: getBackupActionLabel('delete'),
-      type: 'warning',
-    })
-  } catch {
+  const confirmed = await confirmAction(`确定删除备份「${fileName}」吗？`, '删除备份', {
+    confirmButtonText: getBackupActionLabel('delete'),
+  })
+
+  if (!confirmed) {
     return
   }
 

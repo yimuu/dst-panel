@@ -134,7 +134,7 @@
 
 <script setup lang="ts">
 import { CopyDocument, Delete, Edit, Plus, Refresh } from '@element-plus/icons-vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 
 import { createLevel, deleteLevel, saveLevels } from '@/features/levels/level.api'
@@ -147,6 +147,7 @@ import { assertApiSuccess, getErrorMessage } from '@/shared/api/envelope'
 import PageState from '@/shared/components/PageState.vue'
 import { useLevelStore } from '@/shared/stores/levels'
 import type { LevelSummary } from '@/shared/types/domain'
+import { confirmAction } from '@/shared/ui/confirm'
 
 const levelStore = useLevelStore()
 
@@ -252,13 +253,15 @@ async function confirmDeleteWorld(level: LevelSummary): Promise<void> {
     return
   }
 
-  try {
-    await ElMessageBox.confirm(`确定删除世界「${formatLevelName(level)}」吗？`, '删除世界', {
-      cancelButtonText: '取消',
+  const confirmed = await confirmAction(
+    `确定删除世界「${formatLevelName(level)}」吗？`,
+    '删除世界',
+    {
       confirmButtonText: '删除',
-      type: 'warning',
-    })
-  } catch {
+    },
+  )
+
+  if (!confirmed) {
     return
   }
 
