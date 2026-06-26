@@ -233,11 +233,13 @@ function parseBackupTimestamp(value: number | string): number | undefined {
 }
 
 function isRestoring(backup: BackupFile): boolean {
-  return restoringFile.value === getBackupActionFileName(backup)
+  const fileName = getBackupActionFileName(backup)
+  return Boolean(fileName) && restoringFile.value === fileName
 }
 
 function isDeleting(backup: BackupFile): boolean {
-  return deletingFile.value === getBackupActionFileName(backup)
+  const fileName = getBackupActionFileName(backup)
+  return Boolean(fileName) && deletingFile.value === fileName
 }
 
 function readApiData<T>(response: ApiEnvelope<T>, fallbackMessage: string): T {

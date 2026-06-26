@@ -118,6 +118,8 @@ describe('backup page workflow', () => {
     expect(wrapper?.text()).toContain('display-only.zip')
     expect(restoreButton.element.disabled).toBe(true)
     expect(deleteButton.element.disabled).toBe(true)
+    expect(restoreButton.classes()).not.toContain('is-loading')
+    expect(deleteButton.classes()).not.toContain('is-loading')
 
     await restoreButton.trigger('click')
     await deleteButton.trigger('click')
