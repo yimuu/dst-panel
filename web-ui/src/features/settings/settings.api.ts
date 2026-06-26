@@ -1,6 +1,6 @@
 import { apiDelete, apiGet, apiPost } from '@/shared/api/http'
 import type { ApiEnvelope } from '@/shared/api/types'
-import type { TaskSummary } from '@/shared/types/domain'
+import type { GameConfig, TaskSummary } from '@/shared/types/domain'
 
 export interface DstConfig {
   steamcmd: string
@@ -128,6 +128,14 @@ export function getDstConfig(): Promise<ApiEnvelope<DstConfig>> {
 
 export function saveDstConfig(payload: DstConfig): Promise<ApiEnvelope<null>> {
   return apiPost('/api/dst/config', payload)
+}
+
+export function getGameConfig(): Promise<ApiEnvelope<GameConfig>> {
+  return apiGet('/api/game/config')
+}
+
+export function saveGameConfig(payload: GameConfig): Promise<ApiEnvelope<null>> {
+  return apiPost('/api/game/config', payload)
 }
 
 export function getLobbyServerDetail(

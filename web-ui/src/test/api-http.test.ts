@@ -13,13 +13,26 @@ import {
   type CreateClusterRequest,
   type UpdateClusterRequest,
 } from '@/features/clusters/cluster.api'
-import { startLevel, stopLevel } from '@/features/game/game.api'
+import { applyPreinstallTemplate, startLevel, stopLevel } from '@/features/game/game.api'
 import { saveLevels } from '@/features/levels/level.api'
+import {
+  checkWalrusHutPlains,
+  generateMap,
+  getSessionFile,
+} from '@/features/maps/map.api'
 import { deleteMod, searchMods } from '@/features/mods/mod.api'
+import {
+  getClusterIni,
+  getPlayerList,
+  saveClusterIni,
+  savePlayerList,
+} from '@/features/room/room.api'
 import {
   deleteTask,
   getAutoCheck,
+  getGameConfig,
   saveAutoCheck,
+  saveGameConfig,
   saveTask,
   type AutoCheckPayload,
   type AutoCheckSummary,
@@ -28,7 +41,12 @@ import {
 import { getTopActive } from '@/features/statistics/statistics.api'
 import type { ApiEnvelope, PageResult } from '@/shared/api/types'
 import { http, isApiSuccess, normalizeApiError } from '@/shared/api/http'
-import type { InitRequest, ModSummary } from '@/shared/types/domain'
+import type {
+  ClusterIniEnvelope,
+  GameConfig,
+  InitRequest,
+  ModSummary,
+} from '@/shared/types/domain'
 
 const successResponse = { data: { code: 0, data: null } }
 
@@ -164,6 +182,68 @@ describe('API HTTP helpers', () => {
     })
   })
 
+  it('uses backend paths for game config, preinstall, room, and map wrappers', async () => {
+    const get = vi.spyOn(http, 'get').mockResolvedValue(successResponse)
+    const post = vi.spyOn(http, 'post').mockResolvedValue(successResponse)
+    const gameConfig = {
+      clusterIntention: 'cooperative',
+      clusterName: '测试世界',
+      clusterDescription: '测试描述',
+      gameMode: 'survival',
+      pvp: false,
+      maxPlayers: 8,
+      max_snapshots: 6,
+      clusterPassword: '',
+      token: 'server-token',
+      masterMapData: 'return {}',
+      cavesMapData: 'return {}',
+      modData: 'return {}',
+      type: 0,
+      pause_when_nobody: true,
+      vote_enabled: true,
+    } satisfies GameConfig
+
+    await getGameConfig()
+    await saveGameConfig(gameConfig)
+    await applyPreinstallTemplate('forest')
+    await getClusterIni()
+    await saveClusterIni({ cluster: {}, token: 'server-token' } as ClusterIniEnvelope)
+    await getPlayerList('whitelist')
+    await savePlayerList('adminlist', ['KU_admin'])
+    await generateMap('Master')
+    await checkWalrusHutPlains('Master')
+    await getSessionFile('Caves')
+
+    expect(get).toHaveBeenNthCalledWith(1, '/api/game/config', undefined)
+    expect(post).toHaveBeenNthCalledWith(1, '/api/game/config', gameConfig, undefined)
+    expect(get).toHaveBeenNthCalledWith(2, '/api/game/preinstall', {
+      params: { name: 'forest' },
+    })
+    expect(get).toHaveBeenNthCalledWith(3, '/api/game/8level/clusterIni', undefined)
+    expect(post).toHaveBeenNthCalledWith(
+      2,
+      '/api/game/8level/clusterIni',
+      { cluster: {}, token: 'server-token' },
+      undefined,
+    )
+    expect(get).toHaveBeenNthCalledWith(4, '/api/game/8level/whitelist', undefined)
+    expect(post).toHaveBeenNthCalledWith(
+      3,
+      '/api/game/8level/adminilist',
+      { adminList: ['KU_admin'] },
+      undefined,
+    )
+    expect(get).toHaveBeenNthCalledWith(5, '/api/dst/map/gen', {
+      params: { levelName: 'Master' },
+    })
+    expect(get).toHaveBeenNthCalledWith(6, '/api/dst/map/has/walrusHut/plains', {
+      params: { levelName: 'Master' },
+    })
+    expect(get).toHaveBeenNthCalledWith(7, '/api/dst/map/session/file', {
+      params: { levelName: 'Caves' },
+    })
+  })
+
   it('keeps important wrapper response types aligned with backend envelopes', () => {
     expectTypeOf<ReturnType<typeof searchMods>>().toEqualTypeOf<
       Promise<ApiEnvelope<PageResult<ModSummary>>>
@@ -184,6 +264,28 @@ describe('API HTTP helpers', () => {
       Promise<ApiEnvelope<boolean | Record<string, unknown> | null>>
     >()
     expectTypeOf<ReturnType<typeof initialize>>().toEqualTypeOf<Promise<ApiEnvelope<null>>>()
+    expectTypeOf<ReturnType<typeof getClusterIni>>().toEqualTypeOf<
+      Promise<ApiEnvelope<ClusterIniEnvelope>>
+    >()
+    expectTypeOf<ReturnType<typeof saveClusterIni>>().toEqualTypeOf<
+      Promise<ApiEnvelope<ClusterIniEnvelope>>
+    >()
+    expectTypeOf<ReturnType<typeof getPlayerList>>().toEqualTypeOf<
+      Promise<ApiEnvelope<string[]>>
+    >()
+    expectTypeOf<ReturnType<typeof savePlayerList>>().toEqualTypeOf<Promise<ApiEnvelope<null>>>()
+    expectTypeOf<ReturnType<typeof getGameConfig>>().toEqualTypeOf<
+      Promise<ApiEnvelope<GameConfig>>
+    >()
+    expectTypeOf<ReturnType<typeof saveGameConfig>>().toEqualTypeOf<Promise<ApiEnvelope<null>>>()
+    expectTypeOf<ReturnType<typeof applyPreinstallTemplate>>().toEqualTypeOf<
+      Promise<ApiEnvelope<null>>
+    >()
+    expectTypeOf<ReturnType<typeof generateMap>>().toEqualTypeOf<Promise<ApiEnvelope<null>>>()
+    expectTypeOf<ReturnType<typeof checkWalrusHutPlains>>().toEqualTypeOf<
+      Promise<ApiEnvelope<boolean>>
+    >()
+    expectTypeOf<ReturnType<typeof getSessionFile>>().toEqualTypeOf<Promise<ApiEnvelope<string>>>()
     expectTypeOf<Parameters<typeof createCluster>[0]>().toEqualTypeOf<CreateClusterRequest>()
     expectTypeOf<Parameters<typeof updateCluster>[0]>().toEqualTypeOf<UpdateClusterRequest>()
     expectTypeOf<Parameters<typeof initialize>[0]>().toEqualTypeOf<InitRequest>()

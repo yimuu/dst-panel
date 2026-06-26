@@ -36,6 +36,12 @@ export function sendGameCommand(payload: GameCommandRequest): Promise<ApiEnvelop
   return apiPost('/api/game/8level/command', payload)
 }
 
+export function applyPreinstallTemplate(name: string): Promise<ApiEnvelope<null>> {
+  return apiGet('/api/game/preinstall', {
+    params: { name },
+  })
+}
+
 export function getSystemInfo(): Promise<ApiEnvelope<Record<string, unknown>>> {
   return apiGet('/api/game/system/info')
 }
