@@ -12,6 +12,7 @@ import LobbyPage from '@/pages/LobbyPage.vue'
 import LoginPage from '@/pages/LoginPage.vue'
 import ModPage from '@/pages/ModPage.vue'
 import PanelPage from '@/pages/PanelPage.vue'
+import PlayerListPage from '@/pages/PlayerListPage.vue'
 import PlayerLogPage from '@/pages/PlayerLogPage.vue'
 import SettingsPage from '@/pages/SettingsPage.vue'
 import UserProfilePage from '@/pages/UserProfilePage.vue'
@@ -55,17 +56,32 @@ const adminRoutes: RouteRecordRaw[] = [
   {
     path: appRoutes.adminlist.slice(1),
     name: 'home-adminlist',
-    component: FeatureUnavailablePage,
+    component: PlayerListPage,
+    props: {
+      kind: 'adminlist',
+      title: '管理员列表',
+      description: '维护可管理服务器的 KU ID 列表。',
+    },
   },
   {
     path: appRoutes.whitelist.slice(1),
     name: 'home-whitelist',
-    component: FeatureUnavailablePage,
+    component: PlayerListPage,
+    props: {
+      kind: 'whitelist',
+      title: '白名单',
+      description: '维护允许进入房间的 KU ID 列表。',
+    },
   },
   {
     path: appRoutes.blacklist.slice(1),
     name: 'home-blacklist',
-    component: FeatureUnavailablePage,
+    component: PlayerListPage,
+    props: {
+      kind: 'blacklist',
+      title: '黑名单',
+      description: '维护禁止进入房间的 KU ID 列表。',
+    },
   },
   {
     path: appRoutes.levels.slice(1),

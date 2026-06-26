@@ -40,6 +40,18 @@ export const adminMenuItems: AdminMenuItem[] = [
         path: routes.clusterIni,
         label: '集群设置',
       },
+      {
+        path: routes.adminlist,
+        label: '管理员列表',
+      },
+      {
+        path: routes.whitelist,
+        label: '白名单',
+      },
+      {
+        path: routes.blacklist,
+        label: '黑名单',
+      },
     ],
   },
   {

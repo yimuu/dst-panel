@@ -13,6 +13,7 @@ import LobbyPage from '@/pages/LobbyPage.vue'
 import LoginPage from '@/pages/LoginPage.vue'
 import ModPage from '@/pages/ModPage.vue'
 import PanelPage from '@/pages/PanelPage.vue'
+import PlayerListPage from '@/pages/PlayerListPage.vue'
 import PlayerLogPage from '@/pages/PlayerLogPage.vue'
 import SettingsPage from '@/pages/SettingsPage.vue'
 import UserProfilePage from '@/pages/UserProfilePage.vue'
@@ -109,6 +110,14 @@ vi.mock('@/features/room/room.api', () => ({
     code: 0,
     data: null,
   })),
+  getPlayerList: vi.fn(async () => ({
+    code: 0,
+    data: [],
+  })),
+  savePlayerList: vi.fn(async () => ({
+    code: 0,
+    data: null,
+  })),
 }))
 
 vi.mock('@/features/mods/mod.api', () => ({
@@ -170,12 +179,21 @@ vi.mock('vue-router', async () => {
   }
 })
 
-const routePages: Array<[string, Component]> = [
+const routePages: Array<[string, Component, Record<string, unknown>?]> = [
   ['登录页', LoginPage],
   ['初始化页', InitPage],
   ['仪表盘页', DashboardPage],
   ['面板页', PanelPage],
   ['集群设置页', ClusterIniPage],
+  [
+    '玩家列表页',
+    PlayerListPage,
+    {
+      kind: 'adminlist',
+      title: '管理员列表',
+      description: '管理员列表维护',
+    },
+  ],
   ['世界页', WorldLevelsPage],
   ['模组页', ModPage],
   ['备份页', BackupPage],
@@ -187,8 +205,9 @@ const routePages: Array<[string, Component]> = [
 ]
 
 describe('route page skeletons', () => {
-  it.each(routePages)('%s can mount', (_name, component) => {
+  it.each(routePages)('%s can mount', (_name, component, props = {}) => {
     const wrapper = mount(component, {
+      props,
       global: {
         plugins: [createPinia(), ElementPlus],
         stubs: {
