@@ -145,9 +145,8 @@ vi.mock('@/features/mods/mod.api', () => ({
 }))
 
 vi.mock('@/features/maps/map.api', async () => {
-  const actual = await vi.importActual<typeof import('@/features/maps/map.api')>(
-    '@/features/maps/map.api',
-  )
+  const actual =
+    await vi.importActual<typeof import('@/features/maps/map.api')>('@/features/maps/map.api')
 
   return {
     ...actual,

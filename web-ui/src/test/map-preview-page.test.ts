@@ -25,9 +25,8 @@ vi.mock('@/features/levels/level.api', () => ({
 }))
 
 vi.mock('@/features/maps/map.api', async () => {
-  const actual = await vi.importActual<typeof import('@/features/maps/map.api')>(
-    '@/features/maps/map.api',
-  )
+  const actual =
+    await vi.importActual<typeof import('@/features/maps/map.api')>('@/features/maps/map.api')
 
   return {
     ...actual,
@@ -113,9 +112,7 @@ describe('map preview page', () => {
     await flushPromises()
 
     expect(generateMap).toHaveBeenCalledWith('Master')
-    expect(wrapper?.find('img').attributes('src')).toContain(
-      '/api/dst/map/image?levelName=Master',
-    )
+    expect(wrapper?.find('img').attributes('src')).toContain('/api/dst/map/image?levelName=Master')
     expect(checkWalrusHutPlains).toHaveBeenCalledWith('Master')
     expect(getSessionFile).toHaveBeenCalledWith('Master')
   })

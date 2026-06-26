@@ -12,7 +12,12 @@
 
       <div class="control-row">
         <el-select v-model="selectedLevelName" class="level-select" @change="refreshMapMetadata">
-          <el-option v-for="levelName in levelNames" :key="levelName" :label="levelName" :value="levelName" />
+          <el-option
+            v-for="levelName in levelNames"
+            :key="levelName"
+            :label="levelName"
+            :value="levelName"
+          />
         </el-select>
         <el-button :icon="Picture" :loading="generating" type="primary" @click="handleGenerate">
           生成地图

@@ -15,11 +15,7 @@ import {
 } from '@/features/clusters/cluster.api'
 import { applyPreinstallTemplate, startLevel, stopLevel } from '@/features/game/game.api'
 import { saveLevels } from '@/features/levels/level.api'
-import {
-  checkWalrusHutPlains,
-  generateMap,
-  getSessionFile,
-} from '@/features/maps/map.api'
+import { checkWalrusHutPlains, generateMap, getSessionFile } from '@/features/maps/map.api'
 import { deleteMod, searchMods } from '@/features/mods/mod.api'
 import {
   getClusterIni,
@@ -41,12 +37,7 @@ import {
 import { getTopActive } from '@/features/statistics/statistics.api'
 import type { ApiEnvelope, PageResult } from '@/shared/api/types'
 import { http, isApiSuccess, normalizeApiError } from '@/shared/api/http'
-import type {
-  ClusterIniEnvelope,
-  GameConfig,
-  InitRequest,
-  ModSummary,
-} from '@/shared/types/domain'
+import type { ClusterIniEnvelope, GameConfig, InitRequest, ModSummary } from '@/shared/types/domain'
 
 const successResponse = { data: { code: 0, data: null } }
 
@@ -270,9 +261,7 @@ describe('API HTTP helpers', () => {
     expectTypeOf<ReturnType<typeof saveClusterIni>>().toEqualTypeOf<
       Promise<ApiEnvelope<ClusterIniEnvelope>>
     >()
-    expectTypeOf<ReturnType<typeof getPlayerList>>().toEqualTypeOf<
-      Promise<ApiEnvelope<string[]>>
-    >()
+    expectTypeOf<ReturnType<typeof getPlayerList>>().toEqualTypeOf<Promise<ApiEnvelope<string[]>>>()
     expectTypeOf<ReturnType<typeof savePlayerList>>().toEqualTypeOf<Promise<ApiEnvelope<null>>>()
     expectTypeOf<ReturnType<typeof getGameConfig>>().toEqualTypeOf<
       Promise<ApiEnvelope<GameConfig>>

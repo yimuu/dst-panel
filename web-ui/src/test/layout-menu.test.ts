@@ -48,7 +48,7 @@ describe('admin menu', () => {
       routes.genMap,
     ])
     expect(worldMenu?.children?.map((item) => item.label)).toEqual([
-      '世界列表',
+      '世界',
       '选择模组',
       '预设模板',
       '地图预览',

@@ -19,7 +19,12 @@
             @keyup.enter="searchWorkshopMods"
           />
         </div>
-        <el-button :icon="SearchIcon" :loading="searchLoading" type="primary" @click="searchWorkshopMods">
+        <el-button
+          :icon="SearchIcon"
+          :loading="searchLoading"
+          type="primary"
+          @click="searchWorkshopMods"
+        >
           搜索
         </el-button>
       </el-form>
@@ -48,14 +53,24 @@
         <el-button :icon="Refresh" :loading="ugcAcfLoading" @click="handleReadUgcAcf">
           读取 UGC ACF
         </el-button>
-        <el-button :icon="Delete" :loading="setupDeleting" type="danger" @click="handleDeleteSetupWorkshop">
+        <el-button
+          :icon="Delete"
+          :loading="setupDeleting"
+          type="danger"
+          @click="handleDeleteSetupWorkshop"
+        >
           清理 setup/workshop
         </el-button>
         <div class="delete-ugc-row">
           <div data-test="delete-ugc-input">
             <el-input v-model="deleteUgcWorkshopId" placeholder="workshop-123" />
           </div>
-          <el-button :icon="Delete" :loading="ugcDeleting" type="danger" @click="handleDeleteUgcMod">
+          <el-button
+            :icon="Delete"
+            :loading="ugcDeleting"
+            type="danger"
+            @click="handleDeleteUgcMod"
+          >
             删除本地 UGC
           </el-button>
         </div>

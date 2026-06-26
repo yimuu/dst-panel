@@ -231,7 +231,9 @@ describe('mod page workflow', () => {
 
     await findButton('读取 UGC ACF').trigger('click')
     await findButton('清理 setup/workshop').trigger('click')
-    await wrapper?.find<HTMLInputElement>('[data-test="delete-ugc-input"] input').setValue('workshop-123')
+    await wrapper
+      ?.find<HTMLInputElement>('[data-test="delete-ugc-input"] input')
+      .setValue('workshop-123')
     await findButton('删除本地 UGC').trigger('click')
     await flushPromises()
 

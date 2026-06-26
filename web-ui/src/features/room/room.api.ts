@@ -27,10 +27,7 @@ export function getPlayerList(kind: PlayerListKind): Promise<ApiEnvelope<string[
   return apiGet(playerListContracts[kind].path)
 }
 
-export function savePlayerList(
-  kind: PlayerListKind,
-  values: string[],
-): Promise<ApiEnvelope<null>> {
+export function savePlayerList(kind: PlayerListKind, values: string[]): Promise<ApiEnvelope<null>> {
   const payload = buildPlayerListPayload(kind, values)
 
   return apiPost<null, PlayerListPayload>(playerListContracts[kind].path, payload)

@@ -61,7 +61,7 @@ export const adminMenuItems: AdminMenuItem[] = [
     children: [
       {
         path: routes.levels,
-        label: '世界列表',
+        label: '世界',
       },
       {
         path: routes.selectorMod,

@@ -33,10 +33,7 @@ export const playerListContracts = {
   },
 } as const satisfies Record<PlayerListKind, PlayerListContract>
 
-export function buildPlayerListPayload(
-  kind: PlayerListKind,
-  values: string[],
-): PlayerListPayload {
+export function buildPlayerListPayload(kind: PlayerListKind, values: string[]): PlayerListPayload {
   const { bodyKey } = playerListContracts[kind]
 
   return {

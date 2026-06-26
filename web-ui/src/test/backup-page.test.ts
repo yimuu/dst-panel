@@ -227,7 +227,9 @@ describe('backup page workflow', () => {
 
     await findButton('重命名').trigger('click')
     await flushPromises()
-    await wrapper?.find<HTMLInputElement>('[data-test="backup-rename-input"] input').setValue('new.zip')
+    await wrapper
+      ?.find<HTMLInputElement>('[data-test="backup-rename-input"] input')
+      .setValue('new.zip')
     await findButton('保存名称').trigger('click')
     await flushPromises()
 

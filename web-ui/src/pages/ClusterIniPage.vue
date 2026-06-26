@@ -249,10 +249,7 @@ function normalizeClusterIniEnvelope(payload: Partial<ClusterIniEnvelope>): Clus
       game_mode: readString(cluster.game_mode, defaults.cluster.game_mode).trim(),
       max_players: readNumber(cluster.max_players, defaults.cluster.max_players),
       pvp: readBoolean(cluster.pvp, defaults.cluster.pvp),
-      pause_when_nobody: readBoolean(
-        cluster.pause_when_nobody,
-        defaults.cluster.pause_when_nobody,
-      ),
+      pause_when_nobody: readBoolean(cluster.pause_when_nobody, defaults.cluster.pause_when_nobody),
       vote_enabled: readBoolean(cluster.vote_enabled, defaults.cluster.vote_enabled),
       vote_kick_enabled: readBoolean(cluster.vote_kick_enabled, defaults.cluster.vote_kick_enabled),
       lan_only_cluster: readBoolean(cluster.lan_only_cluster, defaults.cluster.lan_only_cluster),
@@ -279,7 +276,10 @@ function normalizeClusterIniEnvelope(payload: Partial<ClusterIniEnvelope>): Clus
       cluster_key: readString(cluster.cluster_key, defaults.cluster.cluster_key),
       steam_group_id: readString(cluster.steam_group_id, defaults.cluster.steam_group_id),
       steam_group_only: readBoolean(cluster.steam_group_only, defaults.cluster.steam_group_only),
-      steam_group_admins: readBoolean(cluster.steam_group_admins, defaults.cluster.steam_group_admins),
+      steam_group_admins: readBoolean(
+        cluster.steam_group_admins,
+        defaults.cluster.steam_group_admins,
+      ),
     },
     token: readString(payload.token, defaults.token).trim(),
   }

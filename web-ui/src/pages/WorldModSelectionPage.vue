@@ -54,12 +54,7 @@
         </template>
 
         <div class="selected-list">
-          <el-tag
-            v-for="modId in selectedModIds"
-            :key="modId"
-            closable
-            @close="removeMod(modId)"
-          >
+          <el-tag v-for="modId in selectedModIds" :key="modId" closable @close="removeMod(modId)">
             {{ formatWorkshopKey(modId) }}
           </el-tag>
           <span v-if="selectedModIds.length === 0" class="empty-text">暂无选择</span>
