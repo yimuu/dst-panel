@@ -1,5 +1,10 @@
-import { describe, expect, it } from 'vitest'
+import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
+import ElementPlus, { ElMessage } from 'element-plus'
+import { createPinia, setActivePinia } from 'pinia'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import * as authApi from '@/features/auth/auth.api'
+import UserProfilePage from '@/pages/UserProfilePage.vue'
 import {
   getProfileAccountId,
   getProfileCreatedAt,
@@ -8,6 +13,49 @@ import {
   normalizeNewPassword,
   validateNewPassword,
 } from '@/features/auth/user-profile'
+import { useAuthStore } from '@/shared/stores/auth'
+
+vi.mock('element-plus', async () => {
+  const actual = await vi.importActual<typeof import('element-plus')>('element-plus')
+
+  return {
+    ...actual,
+    ElMessage: {
+      success: vi.fn(),
+      error: vi.fn(),
+    },
+  }
+})
+
+vi.mock('@/features/auth/auth.api', () => ({
+  changePassword: vi.fn(),
+}))
+
+const changePassword = vi.mocked(authApi.changePassword)
+let wrapper: VueWrapper | undefined
+
+function mountUserProfilePage(): VueWrapper {
+  setActivePinia(createPinia())
+  wrapper = mount(UserProfilePage, {
+    global: {
+      plugins: [ElementPlus],
+    },
+  })
+  return wrapper
+}
+
+beforeEach(() => {
+  vi.clearAllMocks()
+  changePassword.mockResolvedValue({
+    code: 0,
+    data: null,
+  })
+})
+
+afterEach(() => {
+  wrapper?.unmount()
+  wrapper = undefined
+})
 
 describe('user profile helpers', () => {
   it('normalizes profile display fields with Chinese fallbacks', () => {
@@ -39,5 +87,53 @@ describe('user profile helpers', () => {
     expect(validateNewPassword('12345')).toBe('新密码至少需要 6 个字符')
     expect(validateNewPassword('123456')).toBeNull()
     expect(normalizeNewPassword('  123456  ')).toBe('123456')
+  })
+})
+
+describe('user profile page', () => {
+  it('renders unavailable account metadata as no data', async () => {
+    mountUserProfilePage()
+    useAuthStore().user = {
+      username: 'admin',
+    }
+    await flushPromises()
+
+    expect(wrapper?.text()).toContain('admin')
+    expect(wrapper?.text()).toContain('暂无数据')
+    expect(wrapper?.text()).not.toContain('待接入')
+  })
+
+  it('blocks short passwords before calling the API', async () => {
+    mountUserProfilePage()
+    useAuthStore().user = {
+      username: 'admin',
+    }
+    await flushPromises()
+
+    await wrapper?.find<HTMLInputElement>('[data-test="new-password-input"] input').setValue('12345')
+    await wrapper?.find('button').trigger('click')
+    await flushPromises()
+
+    expect(changePassword).not.toHaveBeenCalled()
+    expect(ElMessage.error).toHaveBeenCalledWith('新密码至少需要 6 个字符')
+  })
+
+  it('submits a trimmed valid password and clears the input', async () => {
+    mountUserProfilePage()
+    useAuthStore().user = {
+      username: 'admin',
+    }
+    await flushPromises()
+
+    const input = wrapper?.find<HTMLInputElement>('[data-test="new-password-input"] input')
+
+    await input?.setValue('  new-password-123  ')
+    await wrapper?.find('button').trigger('click')
+    await flushPromises()
+
+    expect(changePassword).toHaveBeenCalledWith({
+      newPassword: 'new-password-123',
+    })
+    expect(input?.element.value).toBe('')
   })
 })

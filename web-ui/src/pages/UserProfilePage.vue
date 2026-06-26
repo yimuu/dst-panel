@@ -34,7 +34,7 @@
 
             <el-form-item>
               <el-button
-                :disabled="passwordForm.newPassword.trim().length === 0"
+                :disabled="normalizeNewPassword(passwordForm.newPassword).length === 0"
                 :icon="Lock"
                 :loading="savingPassword"
                 type="primary"
@@ -56,6 +56,14 @@ import { ElMessage } from 'element-plus'
 import { computed, reactive, ref } from 'vue'
 
 import { changePassword } from '@/features/auth/auth.api'
+import {
+  getProfileAccountId,
+  getProfileCreatedAt,
+  getProfileDisplayName,
+  getProfileRole,
+  normalizeNewPassword,
+  validateNewPassword,
+} from '@/features/auth/user-profile'
 import { assertApiSuccess, getErrorMessage } from '@/shared/api/envelope'
 import PageState from '@/shared/components/PageState.vue'
 import { useAuthStore } from '@/shared/stores/auth'
@@ -66,23 +74,27 @@ const passwordForm = reactive({
 })
 const savingPassword = ref(false)
 
-const displayName = computed(
-  () => auth.user?.displayName || auth.user?.username || auth.user?.name || '未登录',
-)
-const roleName = computed(() => auth.user?.role || '管理员')
-const accountId = computed(() => auth.user?.id || auth.user?.ID || '待接入')
-const createdAt = computed(() => auth.user?.createdAt || '待接入')
+const displayName = computed(() => getProfileDisplayName(auth.user))
+const roleName = computed(() => getProfileRole(auth.user))
+const accountId = computed(() => getProfileAccountId(auth.user))
+const createdAt = computed(() => getProfileCreatedAt(auth.user))
 
 async function handleChangePassword(): Promise<void> {
-  if (passwordForm.newPassword.trim().length === 0) {
-    ElMessage.error('请输入新密码')
+  const validationError = validateNewPassword(passwordForm.newPassword)
+
+  if (validationError) {
+    ElMessage.error(validationError)
     return
   }
 
   savingPassword.value = true
 
   try {
-    assertApiSuccess(await changePassword({ newPassword: passwordForm.newPassword }))
+    assertApiSuccess(
+      await changePassword({
+        newPassword: normalizeNewPassword(passwordForm.newPassword),
+      }),
+    )
     passwordForm.newPassword = ''
     ElMessage.success('密码已更新')
   } catch (error) {
