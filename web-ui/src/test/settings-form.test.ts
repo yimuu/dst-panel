@@ -112,10 +112,14 @@ describe('settings form', () => {
     }
 
     expect(validateDstConfig({ ...baseConfig, steamcmd: '   ' })).toBe('请填写 SteamCMD 目录')
-    expect(validateDstConfig({ ...baseConfig, force_install_dir: '   ' })).toBe('请填写游戏安装目录')
+    expect(validateDstConfig({ ...baseConfig, force_install_dir: '   ' })).toBe(
+      '请填写游戏安装目录',
+    )
     expect(validateDstConfig({ ...baseConfig, cluster: '   ' })).toBe('请填写集群名称')
     expect(validateDstConfig({ ...baseConfig, backup: '   ' })).toBe('请填写备份目录')
-    expect(validateDstConfig({ ...baseConfig, mod_download_path: '   ' })).toBe('请填写模组下载目录')
+    expect(validateDstConfig({ ...baseConfig, mod_download_path: '   ' })).toBe(
+      '请填写模组下载目录',
+    )
   })
 
   it('validates bin and beta instead of silently coercing submitted values', () => {

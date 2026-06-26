@@ -159,12 +159,18 @@ describe('support pages', () => {
     mountPage(SettingsPage)
     await flushPromises()
 
-    await wrapper?.find<HTMLInputElement>('[data-test="steamcmd-input"] input').setValue('  /opt/steamcmd  ')
+    await wrapper
+      ?.find<HTMLInputElement>('[data-test="steamcmd-input"] input')
+      .setValue('  /opt/steamcmd  ')
     await wrapper
       ?.find<HTMLInputElement>('[data-test="force-install-dir-input"] input')
       .setValue('  /srv/dst  ')
-    await wrapper?.find<HTMLInputElement>('[data-test="cluster-input"] input').setValue('  Cluster_1  ')
-    await wrapper?.find<HTMLInputElement>('[data-test="backup-input"] input').setValue('  /srv/backup  ')
+    await wrapper
+      ?.find<HTMLInputElement>('[data-test="cluster-input"] input')
+      .setValue('  Cluster_1  ')
+    await wrapper
+      ?.find<HTMLInputElement>('[data-test="backup-input"] input')
+      .setValue('  /srv/backup  ')
     await wrapper
       ?.find<HTMLInputElement>('[data-test="mod-download-path-input"] input')
       .setValue('  /srv/mods  ')

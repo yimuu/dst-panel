@@ -3,7 +3,12 @@ import type { UserProfile } from '@/shared/types/domain'
 const emptyText = '暂无数据'
 
 export function getProfileDisplayName(user: UserProfile | null): string {
-  return readString(user?.displayName) || readString(user?.username) || readString(user?.name) || '未登录'
+  return (
+    readString(user?.displayName) ||
+    readString(user?.username) ||
+    readString(user?.name) ||
+    '未登录'
+  )
 }
 
 export function getProfileRole(user: UserProfile | null): string {

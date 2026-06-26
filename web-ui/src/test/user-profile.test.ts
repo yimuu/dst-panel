@@ -72,12 +72,8 @@ describe('user profile helpers', () => {
     expect(getProfileAccountId({ id: 7 })).toBe('7')
     expect(getProfileAccountId({ ID: 8 })).toBe('8')
     expect(getProfileAccountId({ username: 'admin' })).toBe('暂无数据')
-    expect(getProfileCreatedAt({ createdAt: '2026-06-26T10:00:00Z' })).toBe(
-      '2026-06-26T10:00:00Z',
-    )
-    expect(getProfileCreatedAt({ created_at: '2026-06-26T10:00:00Z' })).toBe(
-      '2026-06-26T10:00:00Z',
-    )
+    expect(getProfileCreatedAt({ createdAt: '2026-06-26T10:00:00Z' })).toBe('2026-06-26T10:00:00Z')
+    expect(getProfileCreatedAt({ created_at: '2026-06-26T10:00:00Z' })).toBe('2026-06-26T10:00:00Z')
     expect(getProfileCreatedAt({ username: 'admin' })).toBe('暂无数据')
   })
 
@@ -110,7 +106,9 @@ describe('user profile page', () => {
     }
     await flushPromises()
 
-    await wrapper?.find<HTMLInputElement>('[data-test="new-password-input"] input').setValue('12345')
+    await wrapper
+      ?.find<HTMLInputElement>('[data-test="new-password-input"] input')
+      .setValue('12345')
     await wrapper?.find('button').trigger('click')
     await flushPromises()
 
