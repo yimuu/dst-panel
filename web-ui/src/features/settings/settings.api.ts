@@ -2,11 +2,19 @@ import { apiDelete, apiGet, apiPost } from '@/shared/api/http'
 import type { ApiEnvelope } from '@/shared/api/types'
 import type { TaskSummary } from '@/shared/types/domain'
 
-import type { PanelSettingsForm } from './settings-form'
-
-export type SettingsPayload = PanelSettingsForm
-
-export type DstConfigResponse = Partial<PanelSettingsForm> & Record<string, unknown>
+export interface DstConfig {
+  steamcmd: string
+  force_install_dir: string
+  donot_starve_server_directory: string
+  cluster: string
+  backup: string
+  mod_download_path: string
+  bin: number
+  beta: number
+  ugc_directory: string
+  persistent_storage_root: string
+  conf_dir: string
+}
 
 export interface LobbyDetailRequest {
   region: string
@@ -114,13 +122,11 @@ export type AutoCheckPayload = OptionalBackendId & {
   checkType: AutoCheckType
 }
 
-export function getDstConfig(): Promise<ApiEnvelope<DstConfigResponse>> {
+export function getDstConfig(): Promise<ApiEnvelope<DstConfig>> {
   return apiGet('/api/dst/config')
 }
 
-export function saveDstConfig(
-  payload: SettingsPayload,
-): Promise<ApiEnvelope<DstConfigResponse | null>> {
+export function saveDstConfig(payload: DstConfig): Promise<ApiEnvelope<null>> {
   return apiPost('/api/dst/config', payload)
 }
 

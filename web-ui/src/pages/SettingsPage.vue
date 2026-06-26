@@ -1,51 +1,128 @@
 <template>
-  <PageState title="设置" description="管理面板标识、注册开关和 Steam API Key。">
+  <PageState title="设置" description="管理 DST 服务端路径、集群存储和运行参数。">
     <el-card shadow="never">
       <template #header>
         <div class="section-header">
-          <span>基础设置</span>
+          <span>DST 配置</span>
           <el-button :icon="Refresh" :loading="loading" size="small" @click="loadSettings">
             重新加载
           </el-button>
         </div>
       </template>
 
+      <el-alert
+        class="settings-alert"
+        :closable="false"
+        show-icon
+        title="此页保存的是后端 dst_config 文件；注册开关和 Steam API Key 暂无持久化接口。"
+        type="info"
+      />
+
       <el-form v-loading="loading" label-position="top" @submit.prevent>
-        <el-form-item label="面板标识">
-          <div class="field-control" data-test="panel-name-input">
-            <el-input
-              v-model="form.panelName"
-              maxlength="40"
-              placeholder="例如：DST 管理面板"
-              show-word-limit
-            />
-          </div>
-          <p class="field-hint">用于区分当前管理面板实例。</p>
-        </el-form-item>
+        <section class="settings-section">
+          <h2>服务端路径</h2>
+          <el-row :gutter="12">
+            <el-col :xs="24" :lg="8">
+              <el-form-item label="SteamCMD 目录">
+                <div class="field-control" data-test="steamcmd-input">
+                  <el-input v-model="form.steamcmd" placeholder="/opt/steamcmd" />
+                </div>
+              </el-form-item>
+            </el-col>
 
-        <el-form-item label="注册开关">
-          <div class="switch-row">
-            <el-switch
-              v-model="form.enableRegister"
-              active-text="允许注册"
-              inactive-text="关闭注册"
-            />
-          </div>
-          <p class="field-hint">控制是否开放新账号注册入口。</p>
-        </el-form-item>
+            <el-col :xs="24" :lg="8">
+              <el-form-item label="游戏安装目录">
+                <div class="field-control" data-test="force-install-dir-input">
+                  <el-input v-model="form.force_install_dir" placeholder="/opt/dst-server" />
+                </div>
+              </el-form-item>
+            </el-col>
 
-        <el-form-item label="Steam API Key">
-          <div class="field-control" data-test="steam-api-key-input">
-            <el-input
-              v-model="form.steamApiKey"
-              autocomplete="off"
-              placeholder="用于 Steam 相关接口的 API Key"
-              show-password
-              type="password"
-            />
-          </div>
-          <p class="field-hint">仅保存此字段，不会配置 SteamCMD 路径或存档目录。</p>
-        </el-form-item>
+            <el-col :xs="24" :lg="8">
+              <el-form-item label="饥荒服务端目录">
+                <div class="field-control" data-test="donot-starve-server-directory-input">
+                  <el-input v-model="form.donot_starve_server_directory" placeholder="可留空" />
+                </div>
+              </el-form-item>
+            </el-col>
+          </el-row>
+        </section>
+
+        <section class="settings-section">
+          <h2>集群与存储</h2>
+          <el-row :gutter="12">
+            <el-col :xs="24" :lg="8">
+              <el-form-item label="集群名称">
+                <div class="field-control" data-test="cluster-input">
+                  <el-input v-model="form.cluster" placeholder="Cluster_1" />
+                </div>
+              </el-form-item>
+            </el-col>
+
+            <el-col :xs="24" :lg="8">
+              <el-form-item label="备份目录">
+                <div class="field-control" data-test="backup-input">
+                  <el-input v-model="form.backup" placeholder="/opt/dst-backup" />
+                </div>
+              </el-form-item>
+            </el-col>
+
+            <el-col :xs="24" :lg="8">
+              <el-form-item label="模组下载目录">
+                <div class="field-control" data-test="mod-download-path-input">
+                  <el-input v-model="form.mod_download_path" placeholder="/opt/dst-mods" />
+                </div>
+              </el-form-item>
+            </el-col>
+
+            <el-col :xs="24" :lg="8">
+              <el-form-item label="持久化根目录">
+                <div class="field-control" data-test="persistent-storage-root-input">
+                  <el-input v-model="form.persistent_storage_root" placeholder="可留空" />
+                </div>
+              </el-form-item>
+            </el-col>
+
+            <el-col :xs="24" :lg="8">
+              <el-form-item label="配置目录名">
+                <div class="field-control" data-test="conf-dir-input">
+                  <el-input v-model="form.conf_dir" placeholder="DoNotStarveTogether" />
+                </div>
+              </el-form-item>
+            </el-col>
+
+            <el-col :xs="24" :lg="8">
+              <el-form-item label="UGC 目录">
+                <div class="field-control" data-test="ugc-directory-input">
+                  <el-input v-model="form.ugc_directory" placeholder="可留空" />
+                </div>
+              </el-form-item>
+            </el-col>
+          </el-row>
+        </section>
+
+        <section class="settings-section">
+          <h2>运行参数</h2>
+          <el-row :gutter="12">
+            <el-col :xs="24" :lg="8">
+              <el-form-item label="运行位数">
+                <el-radio-group v-model="form.bin" data-test="bin-radio-group">
+                  <el-radio-button :value="32">32 位</el-radio-button>
+                  <el-radio-button :value="64">64 位</el-radio-button>
+                </el-radio-group>
+              </el-form-item>
+            </el-col>
+
+            <el-col :xs="24" :lg="8">
+              <el-form-item label="测试分支">
+                <el-radio-group v-model="form.beta" data-test="beta-radio-group">
+                  <el-radio-button :value="0">关闭</el-radio-button>
+                  <el-radio-button :value="1">开启</el-radio-button>
+                </el-radio-group>
+              </el-form-item>
+            </el-col>
+          </el-row>
+        </section>
 
         <el-form-item>
           <el-button :icon="Check" :loading="saving" type="primary" @click="handleSave">
@@ -62,21 +139,12 @@ import { Check, Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { onMounted, reactive, ref } from 'vue'
 
-import { normalizePanelSettings, type PanelSettingsForm } from '@/features/settings/settings-form'
-import {
-  getDstConfig,
-  saveDstConfig,
-  type DstConfigResponse,
-} from '@/features/settings/settings.api'
+import { getDstConfig, saveDstConfig, type DstConfig } from '@/features/settings/settings.api'
 import { isApiSuccess } from '@/shared/api/http'
 import type { ApiEnvelope } from '@/shared/api/types'
 import PageState from '@/shared/components/PageState.vue'
 
-const form = reactive<PanelSettingsForm>({
-  panelName: 'DST 管理面板',
-  enableRegister: false,
-  steamApiKey: '',
-})
+const form = reactive<DstConfig>(createEmptyDstConfig())
 const loading = ref(false)
 const saving = ref(false)
 
@@ -88,7 +156,7 @@ async function loadSettings(): Promise<void> {
   loading.value = true
 
   try {
-    applyConfig(readApiData(await getDstConfig(), '设置加载失败'))
+    Object.assign(form, normalizeDstConfig(readApiData(await getDstConfig(), '设置加载失败')))
   } catch (error) {
     ElMessage.error(getErrorMessage(error, '设置加载失败'))
   } finally {
@@ -100,7 +168,7 @@ async function handleSave(): Promise<void> {
   saving.value = true
 
   try {
-    const payload = normalizePanelSettings(form)
+    const payload = normalizeDstConfig(form)
     assertApiSuccess(await saveDstConfig(payload))
     Object.assign(form, payload)
     ElMessage.success('设置已保存')
@@ -111,10 +179,44 @@ async function handleSave(): Promise<void> {
   }
 }
 
-function applyConfig(config: DstConfigResponse): void {
-  form.panelName = readString(config.panelName, form.panelName)
-  form.enableRegister = readBoolean(config.enableRegister, form.enableRegister)
-  form.steamApiKey = readString(config.steamApiKey, form.steamApiKey)
+function createEmptyDstConfig(): DstConfig {
+  return {
+    steamcmd: '',
+    force_install_dir: '',
+    donot_starve_server_directory: '',
+    cluster: '',
+    backup: '',
+    mod_download_path: '',
+    bin: 32,
+    beta: 0,
+    ugc_directory: '',
+    persistent_storage_root: '',
+    conf_dir: '',
+  }
+}
+
+function normalizeDstConfig(config: Partial<DstConfig>): DstConfig {
+  const defaults = createEmptyDstConfig()
+
+  return {
+    steamcmd: readString(config.steamcmd, defaults.steamcmd).trim(),
+    force_install_dir: readString(config.force_install_dir, defaults.force_install_dir).trim(),
+    donot_starve_server_directory: readString(
+      config.donot_starve_server_directory,
+      defaults.donot_starve_server_directory,
+    ).trim(),
+    cluster: readString(config.cluster, defaults.cluster).trim(),
+    backup: readString(config.backup, defaults.backup).trim(),
+    mod_download_path: readString(config.mod_download_path, defaults.mod_download_path).trim(),
+    bin: readNumber(config.bin, defaults.bin) === 64 ? 64 : 32,
+    beta: readNumber(config.beta, defaults.beta) === 1 ? 1 : 0,
+    ugc_directory: readString(config.ugc_directory, defaults.ugc_directory).trim(),
+    persistent_storage_root: readString(
+      config.persistent_storage_root,
+      defaults.persistent_storage_root,
+    ).trim(),
+    conf_dir: readString(config.conf_dir, defaults.conf_dir).trim(),
+  }
 }
 
 function readApiData<T>(response: ApiEnvelope<T>, fallbackMessage: string): T {
@@ -133,20 +235,8 @@ function readString(value: unknown, fallback: string): string {
   return typeof value === 'string' ? value : fallback
 }
 
-function readBoolean(value: unknown, fallback: boolean): boolean {
-  if (typeof value === 'boolean') {
-    return value
-  }
-
-  if (typeof value === 'number') {
-    return value !== 0
-  }
-
-  if (typeof value === 'string') {
-    return value === 'true' || value === '1'
-  }
-
-  return fallback
+function readNumber(value: unknown, fallback: number): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback
 }
 
 function getErrorMessage(error: unknown, fallbackMessage: string): string {
@@ -162,21 +252,21 @@ function getErrorMessage(error: unknown, fallbackMessage: string): string {
   gap: 12px;
 }
 
-.field-hint {
-  width: 100%;
-  margin: 6px 0 0;
-  color: #667085;
-  font-size: 13px;
-  line-height: 1.5;
+.settings-alert {
+  margin-bottom: 16px;
+}
+
+.settings-section {
+  margin-bottom: 8px;
+}
+
+.settings-section h2 {
+  margin: 0 0 12px;
+  font-size: 16px;
+  font-weight: 600;
 }
 
 .field-control {
   width: 100%;
-}
-
-.switch-row {
-  min-height: 32px;
-  display: flex;
-  align-items: center;
 }
 </style>

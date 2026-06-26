@@ -90,7 +90,19 @@ vi.mock('@/features/mods/mod.api', () => ({
 vi.mock('@/features/settings/settings.api', () => ({
   getDstConfig: vi.fn(async () => ({
     code: 0,
-    data: {},
+    data: {
+      steamcmd: '/opt/steamcmd',
+      force_install_dir: '/srv/dst',
+      donot_starve_server_directory: '',
+      cluster: 'Cluster_1',
+      backup: '/srv/backup',
+      mod_download_path: '/srv/mods',
+      bin: 64,
+      beta: 0,
+      ugc_directory: '',
+      persistent_storage_root: '/srv/klei',
+      conf_dir: 'DoNotStarveTogether',
+    },
   })),
   saveDstConfig: vi.fn(async () => ({
     code: 0,

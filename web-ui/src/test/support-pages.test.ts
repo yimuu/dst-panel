@@ -11,6 +11,7 @@ import SettingsPage from '@/pages/SettingsPage.vue'
 import UserProfilePage from '@/pages/UserProfilePage.vue'
 import type { ApiEnvelope } from '@/shared/api/types'
 import { useAuthStore } from '@/shared/stores/auth'
+import type { DstConfig } from '@/features/settings/settings.api'
 
 vi.mock('element-plus', async () => {
   const actual = await vi.importActual<typeof import('element-plus')>('element-plus')
@@ -46,6 +47,20 @@ const getLobbyServerDetail = vi.mocked(settingsApi.getLobbyServerDetail)
 const changePassword = vi.mocked(authApi.changePassword)
 
 let wrapper: VueWrapper | undefined
+
+const dstConfigFixture: DstConfig = {
+  steamcmd: '/opt/steamcmd',
+  force_install_dir: '/srv/dst',
+  donot_starve_server_directory: '',
+  cluster: 'Cluster_1',
+  backup: '/srv/backup',
+  mod_download_path: '/srv/mods',
+  bin: 64,
+  beta: 0,
+  ugc_directory: '',
+  persistent_storage_root: '/srv/klei',
+  conf_dir: 'DoNotStarveTogether',
+}
 
 function success<T>(data: T): ApiEnvelope<T> {
   return {
@@ -86,14 +101,7 @@ function findButton(label: string): DOMWrapper<HTMLButtonElement> {
 describe('support pages', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    getDstConfig.mockResolvedValue(
-      success({
-        panelName: '旧面板',
-        enableRegister: false,
-        steamApiKey: 'old-key',
-        steamcmdPath: '/unsupported/path',
-      }),
-    )
+    getDstConfig.mockResolvedValue(success(dstConfigFixture))
     saveDstConfig.mockResolvedValue(success(null))
     getLobbyServerDetail.mockResolvedValue(
       success({
@@ -115,23 +123,19 @@ describe('support pages', () => {
     document.body.innerHTML = ''
   })
 
-  it('saves only normalized panel settings fields', async () => {
+  it('saves the complete DST config payload after editing one path field', async () => {
     mountPage(SettingsPage)
     await flushPromises()
 
     await wrapper
-      ?.find<HTMLInputElement>('[data-test="panel-name-input"] input')
-      .setValue('  新面板  ')
-    await wrapper
-      ?.find<HTMLInputElement>('[data-test="steam-api-key-input"] input')
-      .setValue('  key  ')
+      ?.find<HTMLInputElement>('[data-test="force-install-dir-input"] input')
+      .setValue('/srv/dst-new')
     await findButton('保存设置').trigger('click')
     await flushPromises()
 
     expect(saveDstConfig).toHaveBeenCalledWith({
-      panelName: '新面板',
-      enableRegister: false,
-      steamApiKey: 'key',
+      ...dstConfigFixture,
+      force_install_dir: '/srv/dst-new',
     })
   })
 
