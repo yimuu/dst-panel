@@ -74,7 +74,7 @@ export interface BackupFile {
   fileSize?: number
   size?: number
   createTime?: string
-  time?: number
+  time?: number | string
   [key: string]: unknown
 }
 

@@ -17,6 +17,25 @@ import SettingsPage from '@/pages/SettingsPage.vue'
 import UserProfilePage from '@/pages/UserProfilePage.vue'
 import WorldLevelsPage from '@/pages/WorldLevelsPage.vue'
 
+vi.mock('@/features/backups/backup.api', () => ({
+  listBackups: vi.fn(async () => ({
+    code: 0,
+    data: [],
+  })),
+  createBackup: vi.fn(async () => ({
+    code: 0,
+    data: null,
+  })),
+  restoreBackup: vi.fn(async () => ({
+    code: 0,
+    data: null,
+  })),
+  deleteBackups: vi.fn(async () => ({
+    code: 0,
+    data: null,
+  })),
+}))
+
 vi.mock('@/features/levels/level.api', () => ({
   listLevels: vi.fn(async () => ({
     code: 0,

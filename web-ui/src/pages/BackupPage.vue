@@ -4,19 +4,61 @@
       <template #header>
         <div class="section-header">
           <span>备份文件</span>
-          <el-button disabled type="primary">创建备份</el-button>
+          <el-button
+            :icon="Plus"
+            :loading="creating"
+            size="small"
+            type="primary"
+            @click="handleCreateBackup"
+          >
+            {{ getBackupActionLabel('create') }}
+          </el-button>
         </div>
       </template>
 
-      <el-table :data="[]" empty-text="暂无备份数据">
-        <el-table-column label="文件名" min-width="180" />
-        <el-table-column label="大小" width="120" />
-        <el-table-column label="创建时间" width="180" />
-        <el-table-column label="操作" width="180">
-          <el-button-group>
-            <el-button disabled size="small">下载</el-button>
-            <el-button disabled size="small">恢复</el-button>
-          </el-button-group>
+      <el-table
+        v-loading="loading"
+        :data="backups"
+        :empty-text="emptyText"
+        :row-key="getBackupFileName"
+      >
+        <el-table-column label="文件名" min-width="220">
+          <template #default="{ row }">
+            {{ getBackupFileName(row) || '未命名备份' }}
+          </template>
+        </el-table-column>
+        <el-table-column label="大小" width="120">
+          <template #default="{ row }">
+            {{ formatBackupSize(getBackupSize(row)) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="创建时间" min-width="180">
+          <template #default="{ row }">
+            {{ formatBackupTime(row) }}
+          </template>
+        </el-table-column>
+        <el-table-column fixed="right" label="操作" width="170">
+          <template #default="{ row }">
+            <el-button-group>
+              <el-button
+                :disabled="!getBackupFileName(row)"
+                :loading="isRestoring(row)"
+                size="small"
+                @click="confirmRestoreBackup(row)"
+              >
+                {{ getBackupActionLabel('restore') }}
+              </el-button>
+              <el-button
+                :disabled="!getBackupFileName(row)"
+                :loading="isDeleting(row)"
+                size="small"
+                type="danger"
+                @click="confirmDeleteBackup(row)"
+              >
+                {{ getBackupActionLabel('delete') }}
+              </el-button>
+            </el-button-group>
+          </template>
         </el-table-column>
       </el-table>
     </el-card>
@@ -24,7 +66,191 @@
 </template>
 
 <script setup lang="ts">
+import { Plus } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { computed, onMounted, ref } from 'vue'
+
+import {
+  createBackup,
+  deleteBackups,
+  listBackups,
+  restoreBackup,
+} from '@/features/backups/backup.api'
+import { formatBackupSize, getBackupActionLabel } from '@/features/backups/backup-format'
+import { isApiSuccess } from '@/shared/api/http'
+import type { ApiEnvelope } from '@/shared/api/types'
 import PageState from '@/shared/components/PageState.vue'
+import { useClusterStore } from '@/shared/stores/cluster'
+import type { BackupFile } from '@/shared/types/domain'
+
+const clusterStore = useClusterStore()
+const backups = ref<BackupFile[]>([])
+const loading = ref(false)
+const creating = ref(false)
+const restoringFile = ref('')
+const deletingFile = ref('')
+
+const emptyText = computed(() => (loading.value ? '正在加载备份列表' : '暂无备份数据'))
+
+onMounted(() => {
+  void loadBackups()
+})
+
+async function loadBackups(): Promise<void> {
+  loading.value = true
+
+  try {
+    const response = await listBackups(clusterStore.selectedCluster)
+    const data = readApiData(response, '备份列表加载失败')
+    backups.value = Array.isArray(data) ? data : []
+  } catch (error) {
+    ElMessage.error(getErrorMessage(error, '备份列表加载失败'))
+  } finally {
+    loading.value = false
+  }
+}
+
+async function handleCreateBackup(): Promise<void> {
+  creating.value = true
+
+  try {
+    assertApiSuccess(await createBackup(undefined, clusterStore.selectedCluster))
+    await loadBackups()
+    ElMessage.success('备份已创建')
+  } catch (error) {
+    ElMessage.error(getErrorMessage(error, '备份创建失败'))
+  } finally {
+    creating.value = false
+  }
+}
+
+async function confirmRestoreBackup(backup: BackupFile): Promise<void> {
+  const fileName = getBackupFileName(backup)
+
+  if (!fileName) {
+    ElMessage.error('缺少备份文件名，无法恢复')
+    return
+  }
+
+  try {
+    await ElMessageBox.confirm(`确定恢复备份「${fileName}」吗？`, '恢复备份', {
+      cancelButtonText: '取消',
+      confirmButtonText: getBackupActionLabel('restore'),
+      type: 'warning',
+    })
+  } catch {
+    return
+  }
+
+  restoringFile.value = fileName
+
+  try {
+    assertApiSuccess(await restoreBackup(fileName, clusterStore.selectedCluster))
+    await loadBackups()
+    ElMessage.success('备份已恢复')
+  } catch (error) {
+    ElMessage.error(getErrorMessage(error, '备份恢复失败'))
+  } finally {
+    restoringFile.value = ''
+  }
+}
+
+async function confirmDeleteBackup(backup: BackupFile): Promise<void> {
+  const fileName = getBackupFileName(backup)
+
+  if (!fileName) {
+    ElMessage.error('缺少备份文件名，无法删除')
+    return
+  }
+
+  try {
+    await ElMessageBox.confirm(`确定删除备份「${fileName}」吗？`, '删除备份', {
+      cancelButtonText: '取消',
+      confirmButtonText: getBackupActionLabel('delete'),
+      type: 'warning',
+    })
+  } catch {
+    return
+  }
+
+  deletingFile.value = fileName
+
+  try {
+    assertApiSuccess(await deleteBackups({ fileNames: [fileName] }, clusterStore.selectedCluster))
+    await loadBackups()
+    ElMessage.success('备份已删除')
+  } catch (error) {
+    ElMessage.error(getErrorMessage(error, '备份删除失败'))
+  } finally {
+    deletingFile.value = ''
+  }
+}
+
+function getBackupFileName(backup: BackupFile): string {
+  return backup.fileName || backup.name || ''
+}
+
+function getBackupSize(backup: BackupFile): number {
+  return backup.fileSize || backup.size || 0
+}
+
+function formatBackupTime(backup: BackupFile): string {
+  const value = backup.createTime ?? backup.time
+
+  if (value === undefined || value === null || value === '') {
+    return '未知'
+  }
+
+  const timestamp = parseBackupTimestamp(value)
+
+  if (timestamp === undefined) {
+    return String(value)
+  }
+
+  return new Date(timestamp).toLocaleString('zh-CN', { hour12: false })
+}
+
+function parseBackupTimestamp(value: number | string): number | undefined {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value > 10_000_000_000 ? value : value * 1000
+  }
+
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    return undefined
+  }
+
+  const numericValue = Number(value)
+  if (Number.isFinite(numericValue)) {
+    return numericValue > 10_000_000_000 ? numericValue : numericValue * 1000
+  }
+
+  const parsedValue = Date.parse(value)
+  return Number.isNaN(parsedValue) ? undefined : parsedValue
+}
+
+function isRestoring(backup: BackupFile): boolean {
+  return restoringFile.value === getBackupFileName(backup)
+}
+
+function isDeleting(backup: BackupFile): boolean {
+  return deletingFile.value === getBackupFileName(backup)
+}
+
+function readApiData<T>(response: ApiEnvelope<T>, fallbackMessage: string): T {
+  if (!isApiSuccess(response)) {
+    throw new Error(response.msg || response.message || fallbackMessage)
+  }
+
+  return response.data
+}
+
+function assertApiSuccess(response: ApiEnvelope<unknown>): void {
+  readApiData(response, '操作失败')
+}
+
+function getErrorMessage(error: unknown, fallbackMessage: string): string {
+  return error instanceof Error && error.message ? error.message : fallbackMessage
+}
 </script>
 
 <style scoped>

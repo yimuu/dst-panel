@@ -39,6 +39,13 @@ export function deleteBackups(
   })
 }
 
+export function restoreBackup(backupName: string, cluster?: string): Promise<ApiEnvelope<null>> {
+  return apiGet('/api/game/backup/restore', {
+    ...withCluster(cluster),
+    params: { backupName },
+  })
+}
+
 export function renameBackup(
   payload: RenameBackupRequest,
   cluster?: string,
