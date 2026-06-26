@@ -9,6 +9,10 @@ export interface UpdateUserRequest {
   password: string
 }
 
+export interface ChangePasswordRequest {
+  newPassword: string
+}
+
 export function getInitStatus(): Promise<ApiEnvelope<boolean | Record<string, unknown> | null>> {
   return apiGet('/api/init')
 }
@@ -31,4 +35,8 @@ export function getUser(): Promise<ApiEnvelope<UserProfile>> {
 
 export function updateUser(payload: UpdateUserRequest): Promise<ApiEnvelope<null>> {
   return apiPost('/api/user', payload)
+}
+
+export function changePassword(payload: ChangePasswordRequest): Promise<ApiEnvelope<null>> {
+  return apiPost('/api/change/password', payload)
 }

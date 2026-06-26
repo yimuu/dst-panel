@@ -87,6 +87,21 @@ vi.mock('@/features/mods/mod.api', () => ({
   })),
 }))
 
+vi.mock('@/features/settings/settings.api', () => ({
+  getDstConfig: vi.fn(async () => ({
+    code: 0,
+    data: {},
+  })),
+  saveDstConfig: vi.fn(async () => ({
+    code: 0,
+    data: null,
+  })),
+  getLobbyServerDetail: vi.fn(async () => ({
+    code: 0,
+    data: {},
+  })),
+}))
+
 vi.mock('vue-router', async () => {
   const actual = await vi.importActual<typeof import('vue-router')>('vue-router')
 

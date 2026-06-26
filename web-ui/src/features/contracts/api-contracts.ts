@@ -11,6 +11,7 @@ export const apiContracts: ApiContract[] = [
   { method: 'POST', path: '/api/init', feature: 'auth' },
   { method: 'POST', path: '/api/login', feature: 'auth' },
   { method: 'GET', path: '/api/logout', feature: 'auth' },
+  { method: 'POST', path: '/api/change/password', feature: 'auth' },
   { method: 'GET', path: '/api/user', feature: 'auth' },
   { method: 'POST', path: '/api/user', feature: 'auth' },
 
@@ -46,6 +47,7 @@ export const apiContracts: ApiContract[] = [
 
   { method: 'GET', path: '/api/dst/config', feature: 'setting' },
   { method: 'POST', path: '/api/dst/config', feature: 'setting' },
+  { method: 'GET', path: '/api/dst/lobby/server/detail', feature: 'setting' },
   { method: 'GET', path: '/api/task', feature: 'setting' },
   { method: 'POST', path: '/api/task', feature: 'setting' },
   { method: 'DELETE', path: '/api/task', feature: 'setting' },

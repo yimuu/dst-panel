@@ -2,7 +2,50 @@ import { apiDelete, apiGet, apiPost } from '@/shared/api/http'
 import type { ApiEnvelope } from '@/shared/api/types'
 import type { TaskSummary } from '@/shared/types/domain'
 
-export type SettingsPayload = Record<string, unknown>
+import type { PanelSettingsForm } from './settings-form'
+
+export type SettingsPayload = PanelSettingsForm
+
+export type DstConfigResponse = Partial<PanelSettingsForm> & Record<string, unknown>
+
+export interface LobbyDetailRequest {
+  region: string
+  rowId: string
+}
+
+export interface LobbyPlayer {
+  name?: string
+  prefab?: string
+  colour?: string
+  color?: string
+  [key: string]: unknown
+}
+
+export interface LobbyDayData {
+  day?: number
+  dayselapsedinseason?: number
+  daysleftinseason?: number
+  [key: string]: unknown
+}
+
+export interface LobbyServerDetail {
+  __addr?: string
+  __rowId?: string
+  name?: string
+  desc?: string
+  host?: string
+  mode?: string
+  season?: string
+  connected?: number
+  maxconnections?: number
+  password?: boolean
+  dedicated?: boolean
+  mods?: boolean
+  pvp?: boolean
+  playerList?: LobbyPlayer[] | null
+  dayData?: LobbyDayData | null
+  [key: string]: unknown
+}
 
 export type TaskCategory =
   | 'backup'
@@ -71,14 +114,22 @@ export type AutoCheckPayload = OptionalBackendId & {
   checkType: AutoCheckType
 }
 
-export function getDstConfig(): Promise<ApiEnvelope<Record<string, unknown>>> {
+export function getDstConfig(): Promise<ApiEnvelope<DstConfigResponse>> {
   return apiGet('/api/dst/config')
 }
 
 export function saveDstConfig(
   payload: SettingsPayload,
-): Promise<ApiEnvelope<Record<string, unknown> | null>> {
+): Promise<ApiEnvelope<DstConfigResponse | null>> {
   return apiPost('/api/dst/config', payload)
+}
+
+export function getLobbyServerDetail(
+  params: LobbyDetailRequest,
+): Promise<ApiEnvelope<LobbyServerDetail>> {
+  return apiGet('/api/dst/lobby/server/detail', {
+    params,
+  })
 }
 
 export function listTasks(): Promise<ApiEnvelope<TaskSummary[]>> {
