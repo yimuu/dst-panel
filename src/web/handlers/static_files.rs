@@ -43,7 +43,7 @@ pub(crate) async fn index_handler(State(state): State<AppState>) -> AppResult<Re
             Ok((
                 [
                     (CONTENT_TYPE, "text/html; charset=utf-8"),
-                    (CACHE_CONTROL, "public, max-age=30672000"),
+                    (CACHE_CONTROL, "no-cache"),
                 ],
                 Body::from(contents),
             )

@@ -5,7 +5,7 @@ use axum::{
     body::{Body, to_bytes},
     http::{
         Method, Request, Response, StatusCode,
-        header::{CONTENT_TYPE, COOKIE, HeaderName, HeaderValue, SET_COOKIE},
+        header::{CACHE_CONTROL, CONTENT_TYPE, COOKIE, HeaderName, HeaderValue, SET_COOKIE},
     },
     response::IntoResponse,
 };
@@ -268,6 +268,7 @@ async fn root_static_fallback_serves_dist_index_when_present() {
             .unwrap()
             .starts_with("text/html")
     );
+    assert_eq!(response.headers().get(CACHE_CONTROL).unwrap(), "no-cache");
     assert_eq!(response_text(response).await, "<main>DST Admin</main>");
 }
 
@@ -289,6 +290,10 @@ async fn static_asset_routes_serve_files_from_dist_when_present() {
             .to_str()
             .unwrap()
             .starts_with("application/javascript")
+    );
+    assert_eq!(
+        response.headers().get(CACHE_CONTROL).unwrap(),
+        "public, max-age=30672000"
     );
     assert_eq!(response_text(response).await, "console.log('dst-admin');");
 }
