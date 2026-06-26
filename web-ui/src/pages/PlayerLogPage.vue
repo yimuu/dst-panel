@@ -22,12 +22,10 @@
 
       <div class="stream-panel">
         <el-descriptions :column="2" border>
-          <el-descriptions-item label="当前集群">
-            {{ selectedClusterLabel }}
-          </el-descriptions-item>
           <el-descriptions-item label="连接状态">
             {{ connectionLabel }}
           </el-descriptions-item>
+          <el-descriptions-item label="日志来源">当前配置集群</el-descriptions-item>
         </el-descriptions>
 
         <el-form class="filters" inline @submit.prevent>
@@ -94,7 +92,6 @@ import { computed, nextTick, onBeforeUnmount, ref } from 'vue'
 
 import { buildGameLogStreamPath } from '@/features/game/game.api'
 import PageState from '@/shared/components/PageState.vue'
-import { useClusterStore } from '@/shared/stores/cluster'
 
 const maxLogRows = 1000
 
@@ -117,7 +114,6 @@ const severityFilters: Array<{ value: LevelFilter; label: string; testId: string
   { value: '错误', label: '错误', testId: 'severity-error' },
 ]
 
-const clusterStore = useClusterStore()
 const levelName = ref('Master')
 const levelFilter = ref<LevelFilter>('全部')
 const autoScroll = ref(true)
@@ -129,7 +125,6 @@ const streamError = ref('')
 let nextLogId = 0
 let removeStreamListeners: (() => void) | undefined
 
-const selectedClusterLabel = computed(() => clusterStore.selectedCluster || '未选择集群')
 const normalizedLevelName = computed(() => levelName.value.trim())
 const canConnect = computed(() => isConnected.value || normalizedLevelName.value.length > 0)
 const isConnected = computed(() => stream.value !== undefined)

@@ -19,9 +19,7 @@
       </template>
 
       <el-descriptions :column="2" border>
-        <el-descriptions-item label="集群">
-          {{ selectedClusterLabel }}
-        </el-descriptions-item>
+        <el-descriptions-item label="集群"> 当前配置集群 </el-descriptions-item>
         <el-descriptions-item label="世界数量">
           {{ levelStore.runtimeLevels.length }}
         </el-descriptions-item>
@@ -83,16 +81,13 @@ import {
 import { isApiSuccess } from '@/shared/api/http'
 import type { ApiEnvelope } from '@/shared/api/types'
 import PageState from '@/shared/components/PageState.vue'
-import { useClusterStore } from '@/shared/stores/cluster'
 import { useLevelStore } from '@/shared/stores/levels'
 import type { LevelSummary } from '@/shared/types/domain'
 
-const clusterStore = useClusterStore()
 const levelStore = useLevelStore()
 const panelActions: PanelAction[] = ['start', 'stop', 'restart']
 const loadingActions = ref<Record<string, PanelAction | undefined>>({})
 
-const selectedClusterLabel = computed(() => clusterStore.selectedCluster || '未选择集群')
 const emptyText = computed(() => (levelStore.runtimeLoading ? '正在加载世界列表' : '暂无世界数据'))
 
 onMounted(() => {
@@ -100,7 +95,7 @@ onMounted(() => {
 })
 
 function refreshRuntimeLevels(): void {
-  void levelStore.refreshRuntimeLevels(clusterStore.selectedCluster).catch(() => undefined)
+  void levelStore.refreshRuntimeLevels().catch(() => undefined)
 }
 
 async function runLevelAction(
@@ -128,7 +123,7 @@ async function runLevelAction(
     ElMessage.error('操作失败')
   } finally {
     try {
-      await levelStore.refreshRuntimeLevels(clusterStore.selectedCluster).catch(() => undefined)
+      await levelStore.refreshRuntimeLevels().catch(() => undefined)
     } finally {
       const nextLoadingActions = { ...loadingActions.value }
       delete nextLoadingActions[levelKey]
@@ -138,20 +133,18 @@ async function runLevelAction(
 }
 
 async function submitLevelAction(levelName: string, action: PanelAction): Promise<void> {
-  const cluster = clusterStore.selectedCluster
-
   if (action === 'start') {
-    assertApiSuccess(await startLevel(levelName, cluster))
+    assertApiSuccess(await startLevel(levelName))
     return
   }
 
   if (action === 'stop') {
-    assertApiSuccess(await stopLevel(levelName, cluster))
+    assertApiSuccess(await stopLevel(levelName))
     return
   }
 
-  assertApiSuccess(await stopLevel(levelName, cluster))
-  assertApiSuccess(await startLevel(levelName, cluster))
+  assertApiSuccess(await stopLevel(levelName))
+  assertApiSuccess(await startLevel(levelName))
 }
 
 function assertApiSuccess(response: ApiEnvelope<unknown>): void {

@@ -12,11 +12,11 @@ export const useLevelStore = defineStore('levels', () => {
   const runtimeLevels = ref<LevelSummary[]>([])
   const runtimeLoading = ref(false)
 
-  async function refreshLevels(cluster?: string): Promise<LevelSummary[]> {
+  async function refreshLevels(): Promise<LevelSummary[]> {
     loading.value = true
 
     try {
-      const response = await listLevels(cluster)
+      const response = await listLevels()
       levels.value = isApiSuccess(response) ? response.data : []
       return levels.value
     } finally {
@@ -24,11 +24,11 @@ export const useLevelStore = defineStore('levels', () => {
     }
   }
 
-  async function refreshRuntimeLevels(cluster?: string): Promise<LevelSummary[]> {
+  async function refreshRuntimeLevels(): Promise<LevelSummary[]> {
     runtimeLoading.value = true
 
     try {
-      const response = await getGameStatus(cluster)
+      const response = await getGameStatus()
       runtimeLevels.value = isApiSuccess(response) ? response.data : []
       return runtimeLevels.value
     } finally {

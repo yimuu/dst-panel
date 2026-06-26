@@ -61,15 +61,15 @@ describe('store contracts', () => {
 
     const store = useLevelStore()
 
-    await expect(store.refreshRuntimeLevels('Cluster_1')).resolves.toEqual(runtimeLevels)
+    await expect(store.refreshRuntimeLevels()).resolves.toEqual(runtimeLevels)
 
-    expect(getGameStatus).toHaveBeenCalledWith('Cluster_1')
+    expect(getGameStatus).toHaveBeenCalledWith()
     expect(listLevels).not.toHaveBeenCalled()
     expect(store.runtimeLevels).toEqual(runtimeLevels)
     expect(store.runtimeLoading).toBe(false)
   })
 
-  it('keeps the selected cluster as a string for API header consumers', async () => {
+  it('loads cluster options without exposing request-target selection state', async () => {
     const clusters: ClusterSummary[] = [
       {
         clusterName: 'Cluster_1',
@@ -85,11 +85,8 @@ describe('store contracts', () => {
     await expect(store.refreshClusters()).resolves.toEqual(clusters)
 
     expect(store.clusters).toEqual(clusters)
-    expect(store.selectedCluster).toBe('')
-
-    store.setSelectedCluster('Cluster_2')
-
-    expect(store.selectedCluster).toBe('Cluster_2')
+    expect('selectedCluster' in store).toBe(false)
+    expect('setSelectedCluster' in store).toBe(false)
   })
 
   it('normalizes clusters from paged backend responses', async () => {

@@ -1,4 +1,4 @@
-import { apiDelete, apiGet, apiPost, apiPut, http, withCluster } from '@/shared/api/http'
+import { apiDelete, apiGet, apiPost, apiPut, http } from '@/shared/api/http'
 import type { ApiEnvelope } from '@/shared/api/types'
 import type { BackupFile } from '@/shared/types/domain'
 
@@ -18,44 +18,32 @@ export interface RenameBackupRequest {
   [key: string]: unknown
 }
 
-export function listBackups(cluster?: string): Promise<ApiEnvelope<BackupFile[]>> {
-  return apiGet('/api/game/backup', withCluster(cluster))
+export function listBackups(): Promise<ApiEnvelope<BackupFile[]>> {
+  return apiGet('/api/game/backup')
 }
 
-export function createBackup(
-  payload?: CreateBackupRequest,
-  cluster?: string,
-): Promise<ApiEnvelope<null>> {
-  return apiPost('/api/game/backup', payload, withCluster(cluster))
+export function createBackup(payload?: CreateBackupRequest): Promise<ApiEnvelope<null>> {
+  return apiPost('/api/game/backup', payload)
 }
 
-export function deleteBackups(
-  payload: DeleteBackupsRequest,
-  cluster?: string,
-): Promise<ApiEnvelope<null>> {
+export function deleteBackups(payload: DeleteBackupsRequest): Promise<ApiEnvelope<null>> {
   return apiDelete('/api/game/backup', {
-    ...withCluster(cluster),
     data: payload,
   })
 }
 
-export function restoreBackup(backupName: string, cluster?: string): Promise<ApiEnvelope<null>> {
+export function restoreBackup(backupName: string): Promise<ApiEnvelope<null>> {
   return apiGet('/api/game/backup/restore', {
-    ...withCluster(cluster),
     params: { backupName },
   })
 }
 
-export function renameBackup(
-  payload: RenameBackupRequest,
-  cluster?: string,
-): Promise<ApiEnvelope<null>> {
-  return apiPut('/api/game/backup', payload, withCluster(cluster))
+export function renameBackup(payload: RenameBackupRequest): Promise<ApiEnvelope<null>> {
+  return apiPut('/api/game/backup', payload)
 }
 
-export async function downloadBackup(fileName: string, cluster?: string): Promise<Blob> {
+export async function downloadBackup(fileName: string): Promise<Blob> {
   const response = await http.get<Blob>('/api/game/backup/download', {
-    ...withCluster(cluster),
     params: { fileName },
     responseType: 'blob',
   })

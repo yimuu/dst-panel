@@ -17,7 +17,7 @@ export function getInitStatus(): Promise<ApiEnvelope<boolean | Record<string, un
   return apiGet('/api/init')
 }
 
-export function initialize(payload: InitRequest): Promise<ApiEnvelope<UserProfile | null>> {
+export function initialize(payload: InitRequest): Promise<ApiEnvelope<null>> {
   return apiPost('/api/init', payload)
 }
 

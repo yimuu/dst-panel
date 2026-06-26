@@ -19,9 +19,13 @@ export interface LoginRequest {
 }
 
 export interface InitRequest {
-  username: string
-  password: string
-  confirmPassword?: string
+  userInfo: {
+    username: string
+    password: string
+    displayName: string
+    photoURL: string
+  }
+  dstConfig?: Record<string, unknown>
   [key: string]: unknown
 }
 

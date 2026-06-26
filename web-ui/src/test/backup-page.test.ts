@@ -6,7 +6,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as backupApi from '@/features/backups/backup.api'
 import BackupPage from '@/pages/BackupPage.vue'
 import type { ApiEnvelope } from '@/shared/api/types'
-import { useClusterStore } from '@/shared/stores/cluster'
 import type { BackupFile } from '@/shared/types/domain'
 
 vi.mock('element-plus', async () => {
@@ -49,7 +48,6 @@ function success<T>(data: T): ApiEnvelope<T> {
 function mountBackupPage(backups: BackupFile[]): VueWrapper {
   const pinia = createPinia()
   setActivePinia(pinia)
-  useClusterStore().setSelectedCluster('Cluster_1')
   listBackups.mockResolvedValue(success(backups))
 
   wrapper = mount(BackupPage, {
@@ -98,7 +96,7 @@ describe('backup page workflow', () => {
     ])
     await flushPromises()
 
-    expect(listBackups).toHaveBeenCalledWith('Cluster_1')
+    expect(listBackups).toHaveBeenCalledWith()
     expect(wrapper?.text()).toContain('cluster-backup.zip')
     expect(wrapper?.text()).toContain('1.0 MB')
   })
@@ -151,7 +149,7 @@ describe('backup page workflow', () => {
     await findButton('创建备份').trigger('click')
     await flushPromises()
 
-    expect(createBackup).toHaveBeenCalledWith(undefined, 'Cluster_1')
+    expect(createBackup).toHaveBeenCalledWith()
     expect(listBackups).toHaveBeenCalledTimes(2)
   })
 
@@ -172,7 +170,7 @@ describe('backup page workflow', () => {
       '恢复备份',
       expect.any(Object),
     )
-    expect(restoreBackup).toHaveBeenCalledWith('restore-me.zip', 'Cluster_1')
+    expect(restoreBackup).toHaveBeenCalledWith('restore-me.zip')
     expect(listBackups).toHaveBeenCalledTimes(2)
   })
 
@@ -193,7 +191,7 @@ describe('backup page workflow', () => {
       '删除备份',
       expect.any(Object),
     )
-    expect(deleteBackups).toHaveBeenCalledWith({ fileNames: ['delete-me.zip'] }, 'Cluster_1')
+    expect(deleteBackups).toHaveBeenCalledWith({ fileNames: ['delete-me.zip'] })
     expect(listBackups).toHaveBeenCalledTimes(2)
   })
 })

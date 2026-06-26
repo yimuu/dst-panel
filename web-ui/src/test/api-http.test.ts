@@ -1,6 +1,11 @@
 import { afterEach, describe, expect, expectTypeOf, it, vi } from 'vitest'
 
-import { getInitStatus, updateUser, type UpdateUserRequest } from '@/features/auth/auth.api'
+import {
+  getInitStatus,
+  initialize,
+  updateUser,
+  type UpdateUserRequest,
+} from '@/features/auth/auth.api'
 import { createBackup } from '@/features/backups/backup.api'
 import {
   createCluster,
@@ -22,8 +27,8 @@ import {
 } from '@/features/settings/settings.api'
 import { getTopActive } from '@/features/statistics/statistics.api'
 import type { ApiEnvelope, PageResult } from '@/shared/api/types'
-import { http, isApiSuccess, normalizeApiError, withCluster } from '@/shared/api/http'
-import type { ModSummary } from '@/shared/types/domain'
+import { http, isApiSuccess, normalizeApiError } from '@/shared/api/http'
+import type { InitRequest, ModSummary } from '@/shared/types/domain'
 
 const successResponse = { data: { code: 0, data: null } }
 
@@ -76,25 +81,17 @@ describe('API HTTP helpers', () => {
     expect(normalizeApiError(new Error('plain failure')).message).toBe('plain failure')
   })
 
-  it('builds the optional cluster header config', () => {
-    expect(withCluster()).toBeUndefined()
-    expect(withCluster('Cluster1')).toEqual({
-      headers: {
-        Cluster: 'Cluster1',
-      },
-    })
+  it('uses a Chinese fallback when no API error message exists', () => {
+    expect(normalizeApiError({}).message).toBe('请求失败')
   })
 
-  it('passes levelName query params to game lifecycle wrappers', async () => {
+  it('passes levelName query params without unsupported cluster headers', async () => {
     const get = vi.spyOn(http, 'get').mockResolvedValue(successResponse)
 
-    await startLevel('Master', 'Cluster1')
+    await startLevel('Master')
     await stopLevel('Caves')
 
     expect(get).toHaveBeenNthCalledWith(1, '/api/game/8level/start', {
-      headers: {
-        Cluster: 'Cluster1',
-      },
       params: {
         levelName: 'Master',
       },
@@ -106,21 +103,29 @@ describe('API HTTP helpers', () => {
     })
   })
 
-  it('saves the full level list with the backend body shape', async () => {
+  it('saves the full level list with the backend body shape and no cluster header', async () => {
     const put = vi.spyOn(http, 'put').mockResolvedValue(successResponse)
     const levels = [{ levelName: 'Master' }]
 
-    await saveLevels(levels, 'Cluster1')
+    await saveLevels(levels)
 
-    expect(put).toHaveBeenCalledWith(
-      '/api/cluster/level',
-      { levels },
-      {
-        headers: {
-          Cluster: 'Cluster1',
-        },
+    expect(put).toHaveBeenCalledWith('/api/cluster/level', { levels }, undefined)
+  })
+
+  it('posts the nested first-run initialization payload', async () => {
+    const post = vi.spyOn(http, 'post').mockResolvedValue(successResponse)
+    const payload: InitRequest = {
+      userInfo: {
+        username: 'admin',
+        displayName: '管理员',
+        photoURL: '',
+        password: 'secret',
       },
-    )
+    }
+
+    await initialize(payload)
+
+    expect(post).toHaveBeenCalledWith('/api/init', payload, undefined)
   })
 
   it('uses backend query parameter names for task, mod, and statistics wrappers', async () => {
@@ -178,8 +183,10 @@ describe('API HTTP helpers', () => {
     expectTypeOf<ReturnType<typeof getInitStatus>>().toEqualTypeOf<
       Promise<ApiEnvelope<boolean | Record<string, unknown> | null>>
     >()
+    expectTypeOf<ReturnType<typeof initialize>>().toEqualTypeOf<Promise<ApiEnvelope<null>>>()
     expectTypeOf<Parameters<typeof createCluster>[0]>().toEqualTypeOf<CreateClusterRequest>()
     expectTypeOf<Parameters<typeof updateCluster>[0]>().toEqualTypeOf<UpdateClusterRequest>()
+    expectTypeOf<Parameters<typeof initialize>[0]>().toEqualTypeOf<InitRequest>()
     expectTypeOf<Parameters<typeof saveTask>[0]>().toEqualTypeOf<SaveTaskRequest>()
     expectTypeOf<Parameters<typeof saveAutoCheck>[0]>().toEqualTypeOf<AutoCheckPayload>()
     expectTypeOf<Parameters<typeof updateUser>[0]>().toEqualTypeOf<UpdateUserRequest>()

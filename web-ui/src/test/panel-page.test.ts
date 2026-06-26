@@ -7,7 +7,6 @@ import * as gameApi from '@/features/game/game.api'
 import * as levelApi from '@/features/levels/level.api'
 import PanelPage from '@/pages/PanelPage.vue'
 import type { ApiEnvelope } from '@/shared/api/types'
-import { useClusterStore } from '@/shared/stores/cluster'
 import type { LevelSummary } from '@/shared/types/domain'
 
 vi.mock('element-plus', async () => {
@@ -48,7 +47,6 @@ function success<T>(data: T): ApiEnvelope<T> {
 function mountPanelPage() {
   const pinia = createPinia()
   setActivePinia(pinia)
-  useClusterStore().setSelectedCluster('Cluster_1')
 
   return mount(PanelPage, {
     global: {
@@ -88,7 +86,7 @@ describe('panel page runtime operations', () => {
     const wrapper = mountPanelPage()
     await flushPromises()
 
-    expect(getGameStatus).toHaveBeenCalledWith('Cluster_1')
+    expect(getGameStatus).toHaveBeenCalledWith()
     expect(listLevels).not.toHaveBeenCalled()
     expect(wrapper.text()).toContain('森林')
     expect(wrapper.text()).not.toContain('配置世界')
@@ -116,8 +114,8 @@ describe('panel page runtime operations', () => {
     await restartButton?.trigger('click')
     await flushPromises()
 
-    expect(stopLevel).toHaveBeenCalledWith('Master', 'Cluster_1')
-    expect(startLevel).toHaveBeenCalledWith('Master', 'Cluster_1')
+    expect(stopLevel).toHaveBeenCalledWith('Master')
+    expect(startLevel).toHaveBeenCalledWith('Master')
     expect(stopLevel.mock.invocationCallOrder[0] ?? Number.POSITIVE_INFINITY).toBeLessThan(
       startLevel.mock.invocationCallOrder[0] ?? 0,
     )

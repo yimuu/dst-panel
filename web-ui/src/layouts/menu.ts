@@ -2,19 +2,12 @@ import type { Component } from 'vue'
 import {
   Box,
   DataBoard,
-  Document,
   Files,
-  FolderOpened,
   Help,
   HomeFilled,
-  List,
-  Lock,
   Monitor,
   Operation,
   Setting,
-  Star,
-  Tickets,
-  User,
   VideoCamera,
 } from '@element-plus/icons-vue'
 
@@ -39,58 +32,9 @@ export const adminMenuItems: AdminMenuItem[] = [
     icon: Monitor,
   },
   {
-    path: '/home',
-    label: '房间',
-    icon: HomeFilled,
-    children: [
-      {
-        path: routes.clusterIni,
-        label: '集群设置',
-        icon: HomeFilled,
-      },
-      {
-        path: routes.adminlist,
-        label: '管理员列表',
-        icon: User,
-      },
-      {
-        path: routes.whitelist,
-        label: '白名单',
-        icon: Star,
-      },
-      {
-        path: routes.blacklist,
-        label: '黑名单',
-        icon: Lock,
-      },
-    ],
-  },
-  {
-    path: '/levels',
+    path: routes.levels,
     label: '世界',
     icon: Operation,
-    children: [
-      {
-        path: routes.levels,
-        label: '世界',
-        icon: List,
-      },
-      {
-        path: routes.selectorMod,
-        label: '选择模组',
-        icon: Tickets,
-      },
-      {
-        path: routes.preinstall,
-        label: '预设模板',
-        icon: FolderOpened,
-      },
-      {
-        path: routes.genMap,
-        label: '地图预览',
-        icon: Document,
-      },
-    ],
   },
   {
     path: routes.mod,

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { adminMenuItems } from '@/layouts/menu'
+import { routes } from '@/shared/config/routes'
 
 describe('admin menu', () => {
   it('contains the core admin route paths', () => {
@@ -13,21 +14,15 @@ describe('admin menu', () => {
     expect(paths).toContain('/setting')
   })
 
-  it('groups room and world routes under submenu entries', () => {
-    const roomMenu = adminMenuItems.find((item) => item.path === '/home')
-    const worldMenu = adminMenuItems.find((item) => item.path === '/levels')
+  it('hides unfinished routes from the navigation menu', () => {
+    const paths = JSON.stringify(adminMenuItems)
 
-    expect(roomMenu?.children?.map((item) => item.path)).toEqual([
-      '/home/clusterIni',
-      '/home/adminlist',
-      '/home/whitelist',
-      '/home/blacklist',
-    ])
-    expect(worldMenu?.children?.map((item) => item.path)).toEqual([
-      '/levels/levels',
-      '/levels/selectorMod',
-      '/levels/preinstall',
-      '/levels/genMap',
-    ])
+    expect(paths).not.toContain(routes.clusterIni)
+    expect(paths).not.toContain(routes.adminlist)
+    expect(paths).not.toContain(routes.whitelist)
+    expect(paths).not.toContain(routes.blacklist)
+    expect(paths).not.toContain(routes.selectorMod)
+    expect(paths).not.toContain(routes.preinstall)
+    expect(paths).not.toContain(routes.genMap)
   })
 })

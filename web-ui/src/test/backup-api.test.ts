@@ -10,15 +10,12 @@ describe('backup API wrappers', () => {
     vi.restoreAllMocks()
   })
 
-  it('passes backupName and cluster config to restore backup route', async () => {
+  it('passes backupName without unsupported cluster headers', async () => {
     const get = vi.spyOn(http, 'get').mockResolvedValue(successResponse)
 
-    await restoreBackup('x.zip', 'Cluster_1')
+    await restoreBackup('x.zip')
 
     expect(get).toHaveBeenCalledWith('/api/game/backup/restore', {
-      headers: {
-        Cluster: 'Cluster_1',
-      },
       params: {
         backupName: 'x.zip',
       },

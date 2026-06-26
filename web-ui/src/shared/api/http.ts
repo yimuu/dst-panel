@@ -20,7 +20,7 @@ export function normalizeApiError(error: unknown): ApiError {
     readString(data, 'msg') ??
     readString(data, 'message') ??
     readString(error, 'message') ??
-    'Request failed'
+    '请求失败'
 
   return {
     ...(status === undefined ? {} : { status }),
@@ -59,18 +59,6 @@ export async function apiDelete<T>(
 ): Promise<ApiEnvelope<T>> {
   const response = await http.delete<ApiEnvelope<T>>(url, config)
   return response.data
-}
-
-export function withCluster(cluster?: string): AxiosRequestConfig | undefined {
-  if (!cluster) {
-    return undefined
-  }
-
-  return {
-    headers: {
-      Cluster: cluster,
-    },
-  }
 }
 
 interface ErrorResponse {

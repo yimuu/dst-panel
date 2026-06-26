@@ -80,10 +80,8 @@ import { formatBackupSize, getBackupActionLabel } from '@/features/backups/backu
 import { isApiSuccess } from '@/shared/api/http'
 import type { ApiEnvelope } from '@/shared/api/types'
 import PageState from '@/shared/components/PageState.vue'
-import { useClusterStore } from '@/shared/stores/cluster'
 import type { BackupFile } from '@/shared/types/domain'
 
-const clusterStore = useClusterStore()
 const backups = ref<BackupFile[]>([])
 const loading = ref(false)
 const creating = ref(false)
@@ -100,7 +98,7 @@ async function loadBackups(): Promise<void> {
   loading.value = true
 
   try {
-    const response = await listBackups(clusterStore.selectedCluster)
+    const response = await listBackups()
     const data = readApiData(response, '备份列表加载失败')
     backups.value = Array.isArray(data) ? data : []
   } catch (error) {
@@ -114,7 +112,7 @@ async function handleCreateBackup(): Promise<void> {
   creating.value = true
 
   try {
-    assertApiSuccess(await createBackup(undefined, clusterStore.selectedCluster))
+    assertApiSuccess(await createBackup())
     await loadBackups()
     ElMessage.success('备份已创建')
   } catch (error) {
@@ -145,7 +143,7 @@ async function confirmRestoreBackup(backup: BackupFile): Promise<void> {
   restoringFile.value = fileName
 
   try {
-    assertApiSuccess(await restoreBackup(fileName, clusterStore.selectedCluster))
+    assertApiSuccess(await restoreBackup(fileName))
     await loadBackups()
     ElMessage.success('备份已恢复')
   } catch (error) {
@@ -176,7 +174,7 @@ async function confirmDeleteBackup(backup: BackupFile): Promise<void> {
   deletingFile.value = fileName
 
   try {
-    assertApiSuccess(await deleteBackups({ fileNames: [fileName] }, clusterStore.selectedCluster))
+    assertApiSuccess(await deleteBackups({ fileNames: [fileName] }))
     await loadBackups()
     ElMessage.success('备份已删除')
   } catch (error) {

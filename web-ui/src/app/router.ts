@@ -4,6 +4,7 @@ import AdminLayout from '@/layouts/AdminLayout.vue'
 import AuthLayout from '@/layouts/AuthLayout.vue'
 import BackupPage from '@/pages/BackupPage.vue'
 import DashboardPage from '@/pages/DashboardPage.vue'
+import FeatureUnavailablePage from '@/pages/FeatureUnavailablePage.vue'
 import HelpPage from '@/pages/HelpPage.vue'
 import InitPage from '@/pages/InitPage.vue'
 import LobbyPage from '@/pages/LobbyPage.vue'
@@ -14,6 +15,8 @@ import PlayerLogPage from '@/pages/PlayerLogPage.vue'
 import SettingsPage from '@/pages/SettingsPage.vue'
 import UserProfilePage from '@/pages/UserProfilePage.vue'
 import WorldLevelsPage from '@/pages/WorldLevelsPage.vue'
+import { getInitStatus } from '@/features/auth/auth.api'
+import { isApiSuccess } from '@/shared/api/http'
 import { routes as appRoutes } from '@/shared/config/routes'
 import { useAuthStore } from '@/shared/stores/auth'
 
@@ -46,22 +49,22 @@ const adminRoutes: RouteRecordRaw[] = [
   {
     path: appRoutes.clusterIni.slice(1),
     name: 'home-clusterIni',
-    component: PanelPage,
+    component: FeatureUnavailablePage,
   },
   {
     path: appRoutes.adminlist.slice(1),
     name: 'home-adminlist',
-    component: PanelPage,
+    component: FeatureUnavailablePage,
   },
   {
     path: appRoutes.whitelist.slice(1),
     name: 'home-whitelist',
-    component: PanelPage,
+    component: FeatureUnavailablePage,
   },
   {
     path: appRoutes.blacklist.slice(1),
     name: 'home-blacklist',
-    component: PanelPage,
+    component: FeatureUnavailablePage,
   },
   {
     path: appRoutes.levels.slice(1),
@@ -71,17 +74,17 @@ const adminRoutes: RouteRecordRaw[] = [
   {
     path: appRoutes.selectorMod.slice(1),
     name: 'levels-selectorMod',
-    component: WorldLevelsPage,
+    component: FeatureUnavailablePage,
   },
   {
     path: appRoutes.preinstall.slice(1),
     name: 'levels-preinstall',
-    component: WorldLevelsPage,
+    component: FeatureUnavailablePage,
   },
   {
     path: appRoutes.genMap.slice(1),
     name: 'levels-genMap',
-    component: WorldLevelsPage,
+    component: FeatureUnavailablePage,
   },
   {
     path: appRoutes.mod.slice(1),
@@ -144,6 +147,21 @@ export function createAppRouter() {
   })
 
   router.beforeEach(async (to) => {
+    const firstRun = await checkFirstRun()
+
+    if (firstRun && to.path !== appRoutes.init) {
+      return {
+        path: appRoutes.init,
+        query: {
+          redirect: to.fullPath,
+        },
+      }
+    }
+
+    if (!firstRun && to.path === appRoutes.init) {
+      return appRoutes.login
+    }
+
     if (to.meta.public) {
       return true
     }
@@ -167,4 +185,13 @@ export function createAppRouter() {
   })
 
   return router
+}
+
+async function checkFirstRun(): Promise<boolean> {
+  try {
+    const response = await getInitStatus()
+    return isApiSuccess(response)
+  } catch {
+    return false
+  }
 }

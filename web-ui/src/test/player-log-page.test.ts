@@ -5,7 +5,6 @@ import { nextTick } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import PlayerLogPage from '@/pages/PlayerLogPage.vue'
-import { useClusterStore } from '@/shared/stores/cluster'
 
 class MockEventSource {
   static instances: MockEventSource[] = []
@@ -46,7 +45,6 @@ let wrapper: VueWrapper | undefined
 function mountPlayerLogPage(): VueWrapper {
   const pinia = createPinia()
   setActivePinia(pinia)
-  useClusterStore().setSelectedCluster('Cluster_1')
 
   wrapper = mount(PlayerLogPage, {
     attachTo: document.body,
@@ -83,10 +81,10 @@ describe('player log page stream', () => {
     vi.unstubAllGlobals()
   })
 
-  it('shows selected cluster and exact empty state text', () => {
+  it('shows the exact empty state text without cluster-target UI', () => {
     mountPlayerLogPage()
 
-    expect(wrapper?.text()).toContain('Cluster_1')
+    expect(wrapper?.text()).not.toContain('当前集群')
     expect(wrapper?.text()).toContain('暂无日志数据')
   })
 

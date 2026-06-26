@@ -146,11 +146,9 @@ import {
 import type { ApiEnvelope } from '@/shared/api/types'
 import { isApiSuccess } from '@/shared/api/http'
 import PageState from '@/shared/components/PageState.vue'
-import { useClusterStore } from '@/shared/stores/cluster'
 import { useLevelStore } from '@/shared/stores/levels'
 import type { LevelSummary } from '@/shared/types/domain'
 
-const clusterStore = useClusterStore()
 const levelStore = useLevelStore()
 
 const emptyText = computed(() => (levelStore.loading ? '正在加载世界列表' : '暂无世界数据'))
@@ -167,7 +165,7 @@ onMounted(() => {
 })
 
 function refreshLevels(): void {
-  void levelStore.refreshLevels(clusterStore.selectedCluster).catch(() => undefined)
+  void levelStore.refreshLevels().catch(() => undefined)
 }
 
 function formatLevelName(level: LevelSummary): string {
@@ -232,13 +230,13 @@ async function saveWorldForm(): Promise<void> {
         getLevelUuid(level) === editingUuid.value ? { ...level, ...payload } : level,
       )
 
-      assertApiSuccess(await saveLevels(updatedLevels, clusterStore.selectedCluster))
+      assertApiSuccess(await saveLevels(updatedLevels))
     } else {
-      assertApiSuccess(await createLevel(payload, clusterStore.selectedCluster))
+      assertApiSuccess(await createLevel(payload))
     }
 
     dialogVisible.value = false
-    await levelStore.refreshLevels(clusterStore.selectedCluster).catch(() => undefined)
+    await levelStore.refreshLevels().catch(() => undefined)
     ElMessage.success('世界配置已保存')
   } catch (error) {
     ElMessage.error(getErrorMessage(error, '世界配置保存失败'))
@@ -268,8 +266,8 @@ async function confirmDeleteWorld(level: LevelSummary): Promise<void> {
   deletingUuid.value = targetUuid
 
   try {
-    assertApiSuccess(await deleteLevel(targetUuid, clusterStore.selectedCluster))
-    await levelStore.refreshLevels(clusterStore.selectedCluster).catch(() => undefined)
+    assertApiSuccess(await deleteLevel(targetUuid))
+    await levelStore.refreshLevels().catch(() => undefined)
     ElMessage.success('世界配置已保存')
   } catch (error) {
     ElMessage.error(getErrorMessage(error, '世界配置删除失败'))

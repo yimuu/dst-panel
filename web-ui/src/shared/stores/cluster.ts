@@ -6,7 +6,6 @@ import { isApiSuccess } from '@/shared/api/http'
 import type { ClusterSummary } from '@/shared/types/domain'
 
 export const useClusterStore = defineStore('cluster', () => {
-  const selectedCluster = ref('')
   const clusters = ref<ClusterSummary[]>([])
   const loading = ref(false)
 
@@ -24,15 +23,9 @@ export const useClusterStore = defineStore('cluster', () => {
     }
   }
 
-  function setSelectedCluster(cluster: string): void {
-    selectedCluster.value = cluster
-  }
-
   return {
-    selectedCluster,
     clusters,
     loading,
     refreshClusters,
-    setSelectedCluster,
   }
 })

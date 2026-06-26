@@ -6,7 +6,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as levelApi from '@/features/levels/level.api'
 import WorldLevelsPage from '@/pages/WorldLevelsPage.vue'
 import type { ApiEnvelope } from '@/shared/api/types'
-import { useClusterStore } from '@/shared/stores/cluster'
 import type { LevelSummary } from '@/shared/types/domain'
 
 vi.mock('element-plus', async () => {
@@ -50,7 +49,6 @@ function success<T>(data: T): ApiEnvelope<T> {
 function mountWorldLevelsPage(levels: LevelSummary[]): VueWrapper {
   const pinia = createPinia()
   setActivePinia(pinia)
-  useClusterStore().setSelectedCluster('Cluster_1')
   listLevels.mockResolvedValue(success(levels))
 
   wrapper = mount(WorldLevelsPage, {
@@ -150,7 +148,6 @@ describe('world levels page editing workflow', () => {
           master_server_port: 27016,
         },
       }),
-      'Cluster_1',
     )
     expect(typeof createLevel.mock.calls[0]?.[0].server_ini).toBe('object')
   })
@@ -184,18 +181,15 @@ describe('world levels page editing workflow', () => {
     await uuidInput.setValue('RenamedShard')
     await saveDialog()
 
-    expect(saveLevels).toHaveBeenCalledWith(
-      [
-        expect.objectContaining({
-          levelName: '森林更新',
-          uuid: 'Master',
-          server_ini: expect.objectContaining({
-            name: 'Master',
-          }),
+    expect(saveLevels).toHaveBeenCalledWith([
+      expect.objectContaining({
+        levelName: '森林更新',
+        uuid: 'Master',
+        server_ini: expect.objectContaining({
+          name: 'Master',
         }),
-      ],
-      'Cluster_1',
-    )
+      }),
+    ])
   })
 
   it('deletes by shard uuid instead of display name', async () => {
@@ -211,7 +205,7 @@ describe('world levels page editing workflow', () => {
     await findButton('删除').trigger('click')
     await flushPromises()
 
-    expect(deleteLevel).toHaveBeenCalledWith('Master', 'Cluster_1')
+    expect(deleteLevel).toHaveBeenCalledWith('Master')
   })
 
   it('rejects duplicate create uuid before calling the API', async () => {

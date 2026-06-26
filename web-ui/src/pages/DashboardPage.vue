@@ -21,10 +21,8 @@
 import { computed, onMounted } from 'vue'
 
 import PageState from '@/shared/components/PageState.vue'
-import { useClusterStore } from '@/shared/stores/cluster'
 import { useLevelStore } from '@/shared/stores/levels'
 
-const clusterStore = useClusterStore()
 const levelStore = useLevelStore()
 
 const runningLevelCount = computed(
@@ -42,7 +40,7 @@ const summaryCards = computed(() => [
 ])
 
 onMounted(() => {
-  void levelStore.refreshRuntimeLevels(clusterStore.selectedCluster).catch(() => undefined)
+  void levelStore.refreshRuntimeLevels().catch(() => undefined)
 })
 </script>
 
