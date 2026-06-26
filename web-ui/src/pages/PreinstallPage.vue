@@ -36,8 +36,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { ref } from 'vue'
 
 import { applyPreinstallTemplate } from '@/features/game/game.api'
-import { isApiSuccess } from '@/shared/api/http'
-import type { ApiEnvelope } from '@/shared/api/types'
+import { assertApiSuccess, getErrorMessage } from '@/shared/api/envelope'
 import PageState from '@/shared/components/PageState.vue'
 
 const templateName = ref('default')
@@ -70,16 +69,6 @@ async function handleApply(): Promise<void> {
   } finally {
     saving.value = false
   }
-}
-
-function assertApiSuccess(response: ApiEnvelope<unknown>): void {
-  if (!isApiSuccess(response)) {
-    throw new Error(response.msg || response.message || '操作失败')
-  }
-}
-
-function getErrorMessage(error: unknown, fallbackMessage: string): string {
-  return error instanceof Error && error.message ? error.message : fallbackMessage
 }
 </script>
 

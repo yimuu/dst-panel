@@ -127,8 +127,7 @@ import {
   uploadBackup,
 } from '@/features/backups/backup.api'
 import { formatBackupSize, getBackupActionLabel } from '@/features/backups/backup-format'
-import { isApiSuccess } from '@/shared/api/http'
-import type { ApiEnvelope } from '@/shared/api/types'
+import { assertApiSuccess, getErrorMessage, readApiData } from '@/shared/api/envelope'
 import PageState from '@/shared/components/PageState.vue'
 import type { BackupFile } from '@/shared/types/domain'
 
@@ -400,22 +399,6 @@ function triggerBlobDownload(blob: Blob, fileName: string): void {
   link.click()
   link.remove()
   URL.revokeObjectURL(url)
-}
-
-function readApiData<T>(response: ApiEnvelope<T>, fallbackMessage: string): T {
-  if (!isApiSuccess(response)) {
-    throw new Error(response.msg || response.message || fallbackMessage)
-  }
-
-  return response.data
-}
-
-function assertApiSuccess(response: ApiEnvelope<unknown>): void {
-  readApiData(response, '操作失败')
-}
-
-function getErrorMessage(error: unknown, fallbackMessage: string): string {
-  return error instanceof Error && error.message ? error.message : fallbackMessage
 }
 </script>
 

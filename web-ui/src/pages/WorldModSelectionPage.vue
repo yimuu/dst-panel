@@ -86,8 +86,7 @@ import { computed, onMounted, ref } from 'vue'
 import { listMods } from '@/features/mods/mod.api'
 import { formatWorkshopId, toggleModId } from '@/features/mods/mod-selection'
 import { getGameConfig, saveGameConfig } from '@/features/settings/settings.api'
-import { isApiSuccess } from '@/shared/api/http'
-import type { ApiEnvelope } from '@/shared/api/types'
+import { assertApiSuccess, getErrorMessage, readApiData } from '@/shared/api/envelope'
 import PageState from '@/shared/components/PageState.vue'
 import type { GameConfig, ModSummary } from '@/shared/types/domain'
 
@@ -224,22 +223,6 @@ function renderModOverrides(modIds: string[]): string {
 
 function readText(value: unknown): string | undefined {
   return typeof value === 'string' && value.length > 0 ? value : undefined
-}
-
-function readApiData<T>(response: ApiEnvelope<T>, fallbackMessage: string): T {
-  if (!isApiSuccess(response)) {
-    throw new Error(response.msg || response.message || fallbackMessage)
-  }
-
-  return response.data
-}
-
-function assertApiSuccess(response: ApiEnvelope<unknown>): void {
-  readApiData(response, '操作失败')
-}
-
-function getErrorMessage(error: unknown, fallbackMessage: string): string {
-  return error instanceof Error && error.message ? error.message : fallbackMessage
 }
 </script>
 

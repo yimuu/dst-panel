@@ -218,8 +218,8 @@ import {
   uploadUgcMod,
   type ModPayload,
 } from '@/features/mods/mod.api'
-import { isApiSuccess } from '@/shared/api/http'
-import type { ApiEnvelope, PageResult } from '@/shared/api/types'
+import { assertApiSuccess, getErrorMessage, readApiData } from '@/shared/api/envelope'
+import type { PageResult } from '@/shared/api/types'
 import PageState from '@/shared/components/PageState.vue'
 import type { ModSummary } from '@/shared/types/domain'
 
@@ -510,26 +510,6 @@ function normalizePageData(
   }
 
   return result?.data ?? result?.records ?? result?.list ?? []
-}
-
-function readApiData<T>(response: ApiEnvelope<T>, fallbackMessage: string): T {
-  if (!isApiSuccess(response)) {
-    throw new Error(response.msg || response.message || fallbackMessage)
-  }
-
-  return response.data
-}
-
-function assertApiSuccess(response: ApiEnvelope<unknown>): void {
-  readApiData(response, '操作失败')
-}
-
-function getErrorMessage(error: unknown, fallbackMessage: string): string {
-  if (error instanceof Error && error.message) {
-    return error.message
-  }
-
-  return fallbackMessage
 }
 </script>
 

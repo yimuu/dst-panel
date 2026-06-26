@@ -54,8 +54,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 
 import { getPlayerList, savePlayerList } from '@/features/room/room.api'
 import type { PlayerListKind } from '@/features/room/player-lists'
-import { isApiSuccess } from '@/shared/api/http'
-import type { ApiEnvelope } from '@/shared/api/types'
+import { assertApiSuccess, getErrorMessage, readApiData } from '@/shared/api/envelope'
 import PageState from '@/shared/components/PageState.vue'
 
 interface PlayerListPageProps {
@@ -144,22 +143,6 @@ function parsePlayerList(value: string): string[] {
   }
 
   return [...uniqueValues]
-}
-
-function readApiData<T>(response: ApiEnvelope<T>, fallbackMessage: string): T {
-  if (!isApiSuccess(response)) {
-    throw new Error(response.msg || response.message || fallbackMessage)
-  }
-
-  return response.data
-}
-
-function assertApiSuccess(response: ApiEnvelope<unknown>): void {
-  readApiData(response, '操作失败')
-}
-
-function getErrorMessage(error: unknown, fallbackMessage: string): string {
-  return error instanceof Error && error.message ? error.message : fallbackMessage
 }
 </script>
 

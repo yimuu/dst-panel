@@ -56,8 +56,7 @@ import { ElMessage } from 'element-plus'
 import { computed, reactive, ref } from 'vue'
 
 import { changePassword } from '@/features/auth/auth.api'
-import { isApiSuccess } from '@/shared/api/http'
-import type { ApiEnvelope } from '@/shared/api/types'
+import { assertApiSuccess, getErrorMessage } from '@/shared/api/envelope'
 import PageState from '@/shared/components/PageState.vue'
 import { useAuthStore } from '@/shared/stores/auth'
 
@@ -91,22 +90,6 @@ async function handleChangePassword(): Promise<void> {
   } finally {
     savingPassword.value = false
   }
-}
-
-function readApiData<T>(response: ApiEnvelope<T>, fallbackMessage: string): T {
-  if (!isApiSuccess(response)) {
-    throw new Error(response.msg || response.message || fallbackMessage)
-  }
-
-  return response.data
-}
-
-function assertApiSuccess(response: ApiEnvelope<unknown>): void {
-  readApiData(response, '操作失败')
-}
-
-function getErrorMessage(error: unknown, fallbackMessage: string): string {
-  return error instanceof Error && error.message ? error.message : fallbackMessage
 }
 </script>
 

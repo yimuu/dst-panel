@@ -154,8 +154,7 @@ import { ElMessage } from 'element-plus'
 import { onMounted, reactive, ref } from 'vue'
 
 import { getClusterIni, saveClusterIni } from '@/features/room/room.api'
-import { isApiSuccess } from '@/shared/api/http'
-import type { ApiEnvelope } from '@/shared/api/types'
+import { assertApiSuccess, getErrorMessage, readApiData } from '@/shared/api/envelope'
 import PageState from '@/shared/components/PageState.vue'
 import type { ClusterIni, ClusterIniEnvelope } from '@/shared/types/domain'
 
@@ -285,18 +284,6 @@ function normalizeClusterIniEnvelope(payload: Partial<ClusterIniEnvelope>): Clus
   }
 }
 
-function readApiData<T>(response: ApiEnvelope<T>, fallbackMessage: string): T {
-  if (!isApiSuccess(response)) {
-    throw new Error(response.msg || response.message || fallbackMessage)
-  }
-
-  return response.data
-}
-
-function assertApiSuccess(response: ApiEnvelope<unknown>): void {
-  readApiData(response, '操作失败')
-}
-
 function readString(value: unknown, fallback: string): string {
   return typeof value === 'string' ? value : fallback
 }
@@ -317,10 +304,6 @@ function readNumber(value: unknown, fallback: number): number {
 
 function readBoolean(value: unknown, fallback: boolean): boolean {
   return typeof value === 'boolean' ? value : fallback
-}
-
-function getErrorMessage(error: unknown, fallbackMessage: string): string {
-  return error instanceof Error && error.message ? error.message : fallbackMessage
 }
 </script>
 

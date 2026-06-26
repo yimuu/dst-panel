@@ -78,8 +78,7 @@ import {
   isLevelActionDisabled,
   type PanelAction,
 } from '@/features/panel/panel-actions'
-import { isApiSuccess } from '@/shared/api/http'
-import type { ApiEnvelope } from '@/shared/api/types'
+import { assertApiSuccess } from '@/shared/api/envelope'
 import PageState from '@/shared/components/PageState.vue'
 import { useLevelStore } from '@/shared/stores/levels'
 import type { LevelSummary } from '@/shared/types/domain'
@@ -145,12 +144,6 @@ async function submitLevelAction(levelName: string, action: PanelAction): Promis
 
   assertApiSuccess(await stopLevel(levelName))
   assertApiSuccess(await startLevel(levelName))
-}
-
-function assertApiSuccess(response: ApiEnvelope<unknown>): void {
-  if (!isApiSuccess(response)) {
-    throw new Error(response.msg || response.message || '操作失败')
-  }
 }
 
 function isActionDisabled(level: LevelSummary, action: PanelAction, rowIndex: number): boolean {

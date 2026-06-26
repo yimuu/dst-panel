@@ -83,8 +83,7 @@ import {
   type LobbyPlayer,
   type LobbyServerDetail,
 } from '@/features/settings/settings.api'
-import { isApiSuccess } from '@/shared/api/http'
-import type { ApiEnvelope } from '@/shared/api/types'
+import { getErrorMessage, readApiData } from '@/shared/api/envelope'
 import PageState from '@/shared/components/PageState.vue'
 
 const regions = [
@@ -143,14 +142,6 @@ async function handleQuery(): Promise<void> {
   }
 }
 
-function readApiData<T>(response: ApiEnvelope<T>, fallbackMessage: string): T {
-  if (!isApiSuccess(response)) {
-    throw new Error(response.msg || response.message || fallbackMessage)
-  }
-
-  return response.data
-}
-
 function textValue(value: unknown): string {
   return typeof value === 'string' && value.length > 0 ? value : '未知'
 }
@@ -161,10 +152,6 @@ function booleanText(value: unknown): string {
 
 function readNumber(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined
-}
-
-function getErrorMessage(error: unknown, fallbackMessage: string): string {
-  return error instanceof Error && error.message ? error.message : fallbackMessage
 }
 </script>
 

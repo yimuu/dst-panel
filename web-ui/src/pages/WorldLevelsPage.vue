@@ -143,8 +143,7 @@ import {
   normalizeWorldForm,
   type WorldForm,
 } from '@/features/worlds/world-form'
-import type { ApiEnvelope } from '@/shared/api/types'
-import { isApiSuccess } from '@/shared/api/http'
+import { assertApiSuccess, getErrorMessage } from '@/shared/api/envelope'
 import PageState from '@/shared/components/PageState.vue'
 import { useLevelStore } from '@/shared/stores/levels'
 import type { LevelSummary } from '@/shared/types/domain'
@@ -345,16 +344,6 @@ function createCopyUuid(uuid: string): string {
 
 function isDeleting(level: LevelSummary): boolean {
   return deletingUuid.value === getLevelUuid(level)
-}
-
-function assertApiSuccess(response: ApiEnvelope<unknown>): void {
-  if (!isApiSuccess(response)) {
-    throw new Error(response.msg || response.message || '操作失败')
-  }
-}
-
-function getErrorMessage(error: unknown, fallback: string): string {
-  return error instanceof Error ? error.message : fallback
 }
 </script>
 
