@@ -14,7 +14,7 @@
         class="settings-alert"
         :closable="false"
         show-icon
-        title="此页保存的是后端 dst_config 文件；注册开关和 Steam API Key 暂无持久化接口。"
+        title="此页保存 DST 服务端路径、集群存储和运行参数到后端 dst_config 文件。"
         type="info"
       />
 
@@ -140,6 +140,12 @@ import { ElMessage } from 'element-plus'
 import { onMounted, reactive, ref } from 'vue'
 
 import { getDstConfig, saveDstConfig, type DstConfig } from '@/features/settings/settings.api'
+import {
+  createEmptyDstConfig,
+  normalizeDstConfig,
+  prepareDstConfigForSave,
+  validateDstConfig,
+} from '@/features/settings/settings-form'
 import { assertApiSuccess, getErrorMessage, readApiData } from '@/shared/api/envelope'
 import PageState from '@/shared/components/PageState.vue'
 
@@ -164,10 +170,17 @@ async function loadSettings(): Promise<void> {
 }
 
 async function handleSave(): Promise<void> {
+  const payload = prepareDstConfigForSave(form)
+  const validationError = validateDstConfig(payload)
+
+  if (validationError) {
+    ElMessage.error(validationError)
+    return
+  }
+
   saving.value = true
 
   try {
-    const payload = normalizeDstConfig(form)
     assertApiSuccess(await saveDstConfig(payload))
     await loadSettings()
     ElMessage.success('设置已保存')
@@ -176,54 +189,6 @@ async function handleSave(): Promise<void> {
   } finally {
     saving.value = false
   }
-}
-
-function createEmptyDstConfig(): DstConfig {
-  return {
-    steamcmd: '',
-    force_install_dir: '',
-    donot_starve_server_directory: '',
-    cluster: '',
-    backup: '',
-    mod_download_path: '',
-    bin: 32,
-    beta: 0,
-    ugc_directory: '',
-    persistent_storage_root: '',
-    conf_dir: '',
-  }
-}
-
-function normalizeDstConfig(config: Partial<DstConfig>): DstConfig {
-  const defaults = createEmptyDstConfig()
-
-  return {
-    steamcmd: readString(config.steamcmd, defaults.steamcmd).trim(),
-    force_install_dir: readString(config.force_install_dir, defaults.force_install_dir).trim(),
-    donot_starve_server_directory: readString(
-      config.donot_starve_server_directory,
-      defaults.donot_starve_server_directory,
-    ).trim(),
-    cluster: readString(config.cluster, defaults.cluster).trim(),
-    backup: readString(config.backup, defaults.backup).trim(),
-    mod_download_path: readString(config.mod_download_path, defaults.mod_download_path).trim(),
-    bin: readNumber(config.bin, defaults.bin) === 64 ? 64 : 32,
-    beta: readNumber(config.beta, defaults.beta) === 1 ? 1 : 0,
-    ugc_directory: readString(config.ugc_directory, defaults.ugc_directory).trim(),
-    persistent_storage_root: readString(
-      config.persistent_storage_root,
-      defaults.persistent_storage_root,
-    ).trim(),
-    conf_dir: readString(config.conf_dir, defaults.conf_dir).trim(),
-  }
-}
-
-function readString(value: unknown, fallback: string): string {
-  return typeof value === 'string' ? value : fallback
-}
-
-function readNumber(value: unknown, fallback: number): number {
-  return typeof value === 'number' && Number.isFinite(value) ? value : fallback
 }
 </script>
 

@@ -1,5 +1,5 @@
 import { flushPromises, mount, type DOMWrapper, type VueWrapper } from '@vue/test-utils'
-import ElementPlus from 'element-plus'
+import ElementPlus, { ElMessage } from 'element-plus'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -139,11 +139,7 @@ describe('support pages', () => {
     })
   })
 
-  it('reloads DST config after save so fallback-backed fields show backend values', async () => {
-    getDstConfig
-      .mockResolvedValueOnce(success(dstConfigFixture))
-      .mockResolvedValueOnce(success(dstConfigFixture))
-
+  it('blocks settings save when required fields are empty', async () => {
     mountPage(SettingsPage)
     await flushPromises()
 
@@ -155,12 +151,35 @@ describe('support pages', () => {
     await findButton('保存设置').trigger('click')
     await flushPromises()
 
+    expect(saveDstConfig).not.toHaveBeenCalled()
+    expect(ElMessage.error).toHaveBeenCalledWith('请填写游戏安装目录')
+  })
+
+  it('saves trimmed settings payload after validation passes', async () => {
+    mountPage(SettingsPage)
+    await flushPromises()
+
+    await wrapper?.find<HTMLInputElement>('[data-test="steamcmd-input"] input').setValue('  /opt/steamcmd  ')
+    await wrapper
+      ?.find<HTMLInputElement>('[data-test="force-install-dir-input"] input')
+      .setValue('  /srv/dst  ')
+    await wrapper?.find<HTMLInputElement>('[data-test="cluster-input"] input').setValue('  Cluster_1  ')
+    await wrapper?.find<HTMLInputElement>('[data-test="backup-input"] input').setValue('  /srv/backup  ')
+    await wrapper
+      ?.find<HTMLInputElement>('[data-test="mod-download-path-input"] input')
+      .setValue('  /srv/mods  ')
+
+    await findButton('保存设置').trigger('click')
+    await flushPromises()
+
     expect(saveDstConfig).toHaveBeenCalledWith({
       ...dstConfigFixture,
-      force_install_dir: '',
+      steamcmd: '/opt/steamcmd',
+      force_install_dir: '/srv/dst',
+      cluster: 'Cluster_1',
+      backup: '/srv/backup',
+      mod_download_path: '/srv/mods',
     })
-    expect(getDstConfig).toHaveBeenCalledTimes(2)
-    expect(forceInstallInput?.element.value).toBe('/srv/dst')
   })
 
   it('changes the current user password with the supported payload', async () => {
