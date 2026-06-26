@@ -67,6 +67,10 @@ export const adminMenuItems: AdminMenuItem[] = [
         path: routes.selectorMod,
         label: '选择模组',
       },
+      {
+        path: routes.preinstall,
+        label: '预设模板',
+      },
     ],
   },
   {

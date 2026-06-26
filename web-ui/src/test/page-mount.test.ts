@@ -15,6 +15,7 @@ import ModPage from '@/pages/ModPage.vue'
 import PanelPage from '@/pages/PanelPage.vue'
 import PlayerListPage from '@/pages/PlayerListPage.vue'
 import PlayerLogPage from '@/pages/PlayerLogPage.vue'
+import PreinstallPage from '@/pages/PreinstallPage.vue'
 import SettingsPage from '@/pages/SettingsPage.vue'
 import UserProfilePage from '@/pages/UserProfilePage.vue'
 import WorldLevelsPage from '@/pages/WorldLevelsPage.vue'
@@ -68,6 +69,10 @@ vi.mock('@/features/game/game.api', () => ({
     data: null,
   })),
   stopLevel: vi.fn(async () => ({
+    code: 0,
+    data: null,
+  })),
+  applyPreinstallTemplate: vi.fn(async () => ({
     code: 0,
     data: null,
   })),
@@ -221,6 +226,7 @@ const routePages: Array<[string, Component, Record<string, unknown>?]> = [
   ],
   ['世界页', WorldLevelsPage],
   ['选择模组页', WorldModSelectionPage],
+  ['预设模板页', PreinstallPage],
   ['模组页', ModPage],
   ['备份页', BackupPage],
   ['设置页', SettingsPage],
