@@ -13,6 +13,7 @@ describe('admin menu', () => {
     expect(paths).toContain(routes.whitelist)
     expect(paths).toContain(routes.blacklist)
     expect(paths).toContain('/levels/levels')
+    expect(paths).toContain(routes.selectorMod)
     expect(paths).toContain('/mod')
     expect(paths).toContain('/backup')
     expect(paths).toContain('/setting')
@@ -35,10 +36,19 @@ describe('admin menu', () => {
     ])
   })
 
+  it('shows the completed world submenu entries', () => {
+    const worldMenu = adminMenuItems.find((item) => item.label === '世界')
+
+    expect(worldMenu?.children?.map((item) => item.path)).toEqual([
+      routes.levels,
+      routes.selectorMod,
+    ])
+    expect(worldMenu?.children?.map((item) => item.label)).toEqual(['世界列表', '选择模组'])
+  })
+
   it('hides unfinished routes from the navigation menu', () => {
     const paths = JSON.stringify(adminMenuItems)
 
-    expect(paths).not.toContain(routes.selectorMod)
     expect(paths).not.toContain(routes.preinstall)
     expect(paths).not.toContain(routes.genMap)
   })

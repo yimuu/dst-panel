@@ -58,6 +58,16 @@ export const adminMenuItems: AdminMenuItem[] = [
     path: routes.levels,
     label: '世界',
     icon: Operation,
+    children: [
+      {
+        path: routes.levels,
+        label: '世界列表',
+      },
+      {
+        path: routes.selectorMod,
+        label: '选择模组',
+      },
+    ],
   },
   {
     path: routes.mod,

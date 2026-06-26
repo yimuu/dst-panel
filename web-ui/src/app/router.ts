@@ -17,6 +17,7 @@ import PlayerLogPage from '@/pages/PlayerLogPage.vue'
 import SettingsPage from '@/pages/SettingsPage.vue'
 import UserProfilePage from '@/pages/UserProfilePage.vue'
 import WorldLevelsPage from '@/pages/WorldLevelsPage.vue'
+import WorldModSelectionPage from '@/pages/WorldModSelectionPage.vue'
 import { getInitStatus } from '@/features/auth/auth.api'
 import { isApiSuccess } from '@/shared/api/http'
 import { routes as appRoutes } from '@/shared/config/routes'
@@ -91,7 +92,7 @@ const adminRoutes: RouteRecordRaw[] = [
   {
     path: appRoutes.selectorMod.slice(1),
     name: 'levels-selectorMod',
-    component: FeatureUnavailablePage,
+    component: WorldModSelectionPage,
   },
   {
     path: appRoutes.preinstall.slice(1),

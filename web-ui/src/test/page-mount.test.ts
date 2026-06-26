@@ -18,6 +18,7 @@ import PlayerLogPage from '@/pages/PlayerLogPage.vue'
 import SettingsPage from '@/pages/SettingsPage.vue'
 import UserProfilePage from '@/pages/UserProfilePage.vue'
 import WorldLevelsPage from '@/pages/WorldLevelsPage.vue'
+import WorldModSelectionPage from '@/pages/WorldModSelectionPage.vue'
 
 vi.mock('@/features/backups/backup.api', () => ({
   listBackups: vi.fn(async () => ({
@@ -162,6 +163,30 @@ vi.mock('@/features/settings/settings.api', () => ({
     code: 0,
     data: {},
   })),
+  getGameConfig: vi.fn(async () => ({
+    code: 0,
+    data: {
+      clusterIntention: 'cooperative',
+      clusterName: '测试世界',
+      clusterDescription: '',
+      gameMode: 'survival',
+      pvp: false,
+      maxPlayers: 8,
+      max_snapshots: 6,
+      clusterPassword: '',
+      token: 'server-token',
+      masterMapData: '',
+      cavesMapData: '',
+      modData: '',
+      type: 0,
+      pause_when_nobody: true,
+      vote_enabled: true,
+    },
+  })),
+  saveGameConfig: vi.fn(async () => ({
+    code: 0,
+    data: null,
+  })),
 }))
 
 vi.mock('vue-router', async () => {
@@ -195,6 +220,7 @@ const routePages: Array<[string, Component, Record<string, unknown>?]> = [
     },
   ],
   ['世界页', WorldLevelsPage],
+  ['选择模组页', WorldModSelectionPage],
   ['模组页', ModPage],
   ['备份页', BackupPage],
   ['设置页', SettingsPage],

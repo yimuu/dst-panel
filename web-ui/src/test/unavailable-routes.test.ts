@@ -4,6 +4,7 @@ import { createAppRouter } from '@/app/router'
 import ClusterIniPage from '@/pages/ClusterIniPage.vue'
 import FeatureUnavailablePage from '@/pages/FeatureUnavailablePage.vue'
 import PlayerListPage from '@/pages/PlayerListPage.vue'
+import WorldModSelectionPage from '@/pages/WorldModSelectionPage.vue'
 import { routes } from '@/shared/config/routes'
 
 describe('unfinished admin routes', () => {
@@ -36,10 +37,17 @@ describe('unfinished admin routes', () => {
     }
   })
 
+  it('routes completed world mod selection to the real page', () => {
+    const router = createAppRouter()
+
+    expect(router.resolve(routes.selectorMod).matched.at(-1)?.components?.default).toBe(
+      WorldModSelectionPage,
+    )
+  })
+
   it('route to an explicit unavailable page instead of unrelated business pages', () => {
     const router = createAppRouter()
     const unfinishedRoutes = [
-      routes.selectorMod,
       routes.preinstall,
       routes.genMap,
     ]
