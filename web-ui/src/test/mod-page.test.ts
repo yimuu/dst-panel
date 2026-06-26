@@ -23,11 +23,19 @@ vi.mock('@/features/mods/mod.api', () => ({
   listMods: vi.fn(),
   searchMods: vi.fn(),
   saveModInfo: vi.fn(),
+  uploadUgcMod: vi.fn(),
+  deleteSetupWorkshop: vi.fn(),
+  readUgcAcf: vi.fn(),
+  deleteUgcMod: vi.fn(),
 }))
 
 const listMods = vi.mocked(modApi.listMods)
 const searchMods = vi.mocked(modApi.searchMods)
 const saveModInfo = vi.mocked(modApi.saveModInfo)
+const uploadUgcMod = vi.mocked(modApi.uploadUgcMod)
+const deleteSetupWorkshop = vi.mocked(modApi.deleteSetupWorkshop)
+const readUgcAcf = vi.mocked(modApi.readUgcAcf)
+const deleteUgcMod = vi.mocked(modApi.deleteUgcMod)
 
 let wrapper: VueWrapper | undefined
 
@@ -90,6 +98,10 @@ describe('mod page workflow', () => {
     listMods.mockResolvedValue(success([]))
     searchMods.mockResolvedValue(success(page([])))
     saveModInfo.mockResolvedValue(success({}))
+    uploadUgcMod.mockResolvedValue(success(null))
+    deleteSetupWorkshop.mockResolvedValue(success(null))
+    readUgcAcf.mockResolvedValue(success([]))
+    deleteUgcMod.mockResolvedValue(success(null))
   })
 
   afterEach(() => {
@@ -200,5 +212,31 @@ describe('mod page workflow', () => {
     expect(saveModInfo.mock.calls[0]?.[0]).not.toHaveProperty('id')
     expect(saveModInfo.mock.calls[0]?.[0]).not.toHaveProperty('ID')
     expect(listMods).toHaveBeenCalledTimes(2)
+  })
+
+  it('runs local UGC upload and cleanup tools', async () => {
+    mountModPage()
+    await flushPromises()
+
+    const file = new File(['ugc'], 'mod.zip')
+    const uploadInput = wrapper?.find<HTMLInputElement>('[data-test="ugc-upload-input"]')
+    Object.defineProperty(uploadInput?.element, 'files', {
+      configurable: true,
+      value: [file],
+    })
+    await uploadInput?.trigger('change')
+    await flushPromises()
+
+    expect(uploadUgcMod).toHaveBeenCalledWith(expect.any(FormData))
+
+    await findButton('读取 UGC ACF').trigger('click')
+    await findButton('清理 setup/workshop').trigger('click')
+    await wrapper?.find<HTMLInputElement>('[data-test="delete-ugc-input"] input').setValue('workshop-123')
+    await findButton('删除本地 UGC').trigger('click')
+    await flushPromises()
+
+    expect(readUgcAcf).toHaveBeenCalled()
+    expect(deleteSetupWorkshop).toHaveBeenCalled()
+    expect(deleteUgcMod).toHaveBeenCalledWith('workshop-123')
   })
 })

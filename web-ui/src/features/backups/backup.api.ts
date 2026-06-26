@@ -42,6 +42,13 @@ export function renameBackup(payload: RenameBackupRequest): Promise<ApiEnvelope<
   return apiPut('/api/game/backup', payload)
 }
 
+export function uploadBackup(file: File): Promise<ApiEnvelope<null>> {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  return apiPost('/api/game/backup/upload', formData)
+}
+
 export async function downloadBackup(fileName: string): Promise<Blob> {
   const response = await http.get<Blob>('/api/game/backup/download', {
     params: { fileName },

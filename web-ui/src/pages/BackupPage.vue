@@ -4,15 +4,27 @@
       <template #header>
         <div class="section-header">
           <span>备份文件</span>
-          <el-button
-            :icon="Plus"
-            :loading="creating"
-            size="small"
-            type="primary"
-            @click="handleCreateBackup"
-          >
-            {{ getBackupActionLabel('create') }}
-          </el-button>
+          <el-space wrap>
+            <input
+              ref="backupUploadInput"
+              class="visually-hidden"
+              data-test="backup-upload-input"
+              type="file"
+              @change="handleUploadBackup"
+            />
+            <el-button :icon="Upload" :loading="uploading" size="small" @click="openUploadDialog">
+              上传备份
+            </el-button>
+            <el-button
+              :icon="Plus"
+              :loading="creating"
+              size="small"
+              type="primary"
+              @click="handleCreateBackup"
+            >
+              {{ getBackupActionLabel('create') }}
+            </el-button>
+          </el-space>
         </div>
       </template>
 
@@ -37,7 +49,7 @@
             {{ formatBackupTime(row) }}
           </template>
         </el-table-column>
-        <el-table-column fixed="right" label="操作" width="170">
+        <el-table-column fixed="right" label="操作" width="320">
           <template #default="{ row }">
             <el-button-group>
               <el-button
@@ -47,6 +59,24 @@
                 @click="confirmRestoreBackup(row)"
               >
                 {{ getBackupActionLabel('restore') }}
+              </el-button>
+              <el-button
+                :disabled="!getBackupActionFileName(row)"
+                :icon="Edit"
+                :loading="isRenaming(row)"
+                size="small"
+                @click="openRenameDialog(row)"
+              >
+                重命名
+              </el-button>
+              <el-button
+                :disabled="!getBackupActionFileName(row)"
+                :icon="Download"
+                :loading="isDownloading(row)"
+                size="small"
+                @click="handleDownloadBackup(row)"
+              >
+                下载
               </el-button>
               <el-button
                 :disabled="!getBackupActionFileName(row)"
@@ -62,19 +92,39 @@
         </el-table-column>
       </el-table>
     </el-card>
+
+    <el-dialog v-model="renameDialogVisible" :teleported="false" title="重命名备份" width="420px">
+      <el-form label-position="top" @submit.prevent>
+        <el-form-item label="新文件名">
+          <div data-test="backup-rename-input">
+            <el-input v-model="renameForm.newName" />
+          </div>
+        </el-form-item>
+      </el-form>
+
+      <template #footer>
+        <el-button @click="renameDialogVisible = false">取消</el-button>
+        <el-button :loading="renamingFile.length > 0" type="primary" @click="saveRename">
+          保存名称
+        </el-button>
+      </template>
+    </el-dialog>
   </PageState>
 </template>
 
 <script setup lang="ts">
-import { Plus } from '@element-plus/icons-vue'
+import { Download, Edit, Plus, Upload } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 
 import {
   createBackup,
   deleteBackups,
+  downloadBackup,
   listBackups,
+  renameBackup,
   restoreBackup,
+  uploadBackup,
 } from '@/features/backups/backup.api'
 import { formatBackupSize, getBackupActionLabel } from '@/features/backups/backup-format'
 import { isApiSuccess } from '@/shared/api/http'
@@ -85,8 +135,17 @@ import type { BackupFile } from '@/shared/types/domain'
 const backups = ref<BackupFile[]>([])
 const loading = ref(false)
 const creating = ref(false)
+const uploading = ref(false)
 const restoringFile = ref('')
+const renamingFile = ref('')
+const downloadingFile = ref('')
 const deletingFile = ref('')
+const renameDialogVisible = ref(false)
+const backupUploadInput = ref<HTMLInputElement>()
+const renameForm = reactive({
+  fileName: '',
+  newName: '',
+})
 
 const emptyText = computed(() => (loading.value ? '正在加载备份列表' : '暂无备份数据'))
 
@@ -119,6 +178,67 @@ async function handleCreateBackup(): Promise<void> {
     ElMessage.error(getErrorMessage(error, '备份创建失败'))
   } finally {
     creating.value = false
+  }
+}
+
+function openUploadDialog(): void {
+  backupUploadInput.value?.click()
+}
+
+async function handleUploadBackup(event: Event): Promise<void> {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+
+  if (!file) {
+    return
+  }
+
+  uploading.value = true
+
+  try {
+    assertApiSuccess(await uploadBackup(file))
+    await loadBackups()
+    ElMessage.success('备份已上传')
+  } catch (error) {
+    ElMessage.error(getErrorMessage(error, '备份上传失败'))
+  } finally {
+    input.value = ''
+    uploading.value = false
+  }
+}
+
+function openRenameDialog(backup: BackupFile): void {
+  const fileName = getBackupActionFileName(backup)
+
+  if (!fileName) {
+    ElMessage.error('缺少备份文件名，无法重命名')
+    return
+  }
+
+  renameForm.fileName = fileName
+  renameForm.newName = fileName
+  renameDialogVisible.value = true
+}
+
+async function saveRename(): Promise<void> {
+  const newName = renameForm.newName.trim()
+
+  if (!renameForm.fileName || !newName) {
+    ElMessage.error('请填写新文件名')
+    return
+  }
+
+  renamingFile.value = renameForm.fileName
+
+  try {
+    assertApiSuccess(await renameBackup({ fileName: renameForm.fileName, newName }))
+    renameDialogVisible.value = false
+    await loadBackups()
+    ElMessage.success('备份已重命名')
+  } catch (error) {
+    ElMessage.error(getErrorMessage(error, '备份重命名失败'))
+  } finally {
+    renamingFile.value = ''
   }
 }
 
@@ -184,6 +304,26 @@ async function confirmDeleteBackup(backup: BackupFile): Promise<void> {
   }
 }
 
+async function handleDownloadBackup(backup: BackupFile): Promise<void> {
+  const fileName = getBackupActionFileName(backup)
+
+  if (!fileName) {
+    ElMessage.error('缺少备份文件名，无法下载')
+    return
+  }
+
+  downloadingFile.value = fileName
+
+  try {
+    triggerBlobDownload(await downloadBackup(fileName), fileName)
+    ElMessage.success('备份下载已开始')
+  } catch (error) {
+    ElMessage.error(getErrorMessage(error, '备份下载失败'))
+  } finally {
+    downloadingFile.value = ''
+  }
+}
+
 function getBackupDisplayName(backup: BackupFile): string {
   return backup.fileName || backup.name || '未命名备份'
 }
@@ -235,9 +375,31 @@ function isRestoring(backup: BackupFile): boolean {
   return Boolean(fileName) && restoringFile.value === fileName
 }
 
+function isRenaming(backup: BackupFile): boolean {
+  const fileName = getBackupActionFileName(backup)
+  return Boolean(fileName) && renamingFile.value === fileName
+}
+
+function isDownloading(backup: BackupFile): boolean {
+  const fileName = getBackupActionFileName(backup)
+  return Boolean(fileName) && downloadingFile.value === fileName
+}
+
 function isDeleting(backup: BackupFile): boolean {
   const fileName = getBackupActionFileName(backup)
   return Boolean(fileName) && deletingFile.value === fileName
+}
+
+function triggerBlobDownload(blob: Blob, fileName: string): void {
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+
+  link.href = url
+  link.download = fileName
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(url)
 }
 
 function readApiData<T>(response: ApiEnvelope<T>, fallbackMessage: string): T {
@@ -263,5 +425,14 @@ function getErrorMessage(error: unknown, fallbackMessage: string): string {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
 }
 </style>

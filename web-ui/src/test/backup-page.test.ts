@@ -28,12 +28,18 @@ vi.mock('@/features/backups/backup.api', () => ({
   createBackup: vi.fn(),
   restoreBackup: vi.fn(),
   deleteBackups: vi.fn(),
+  renameBackup: vi.fn(),
+  downloadBackup: vi.fn(),
+  uploadBackup: vi.fn(),
 }))
 
 const listBackups = vi.mocked(backupApi.listBackups)
 const createBackup = vi.mocked(backupApi.createBackup)
 const restoreBackup = vi.mocked(backupApi.restoreBackup)
 const deleteBackups = vi.mocked(backupApi.deleteBackups)
+const renameBackup = vi.mocked(backupApi.renameBackup)
+const downloadBackup = vi.mocked(backupApi.downloadBackup)
+const uploadBackup = vi.mocked(backupApi.uploadBackup)
 const confirmMessageBox = vi.mocked(ElMessageBox.confirm)
 
 let wrapper: VueWrapper | undefined
@@ -77,7 +83,22 @@ describe('backup page workflow', () => {
     createBackup.mockResolvedValue(success(null))
     restoreBackup.mockResolvedValue(success(null))
     deleteBackups.mockResolvedValue(success(null))
+    renameBackup.mockResolvedValue(success(null))
+    downloadBackup.mockResolvedValue(new Blob(['backup']))
+    uploadBackup.mockResolvedValue(success(null))
     confirmMessageBox.mockResolvedValue({} as never)
+    Object.defineProperty(URL, 'createObjectURL', {
+      configurable: true,
+      value: vi.fn(() => 'blob:backup'),
+    })
+    Object.defineProperty(URL, 'revokeObjectURL', {
+      configurable: true,
+      value: vi.fn(),
+    })
+    Object.defineProperty(HTMLAnchorElement.prototype, 'click', {
+      configurable: true,
+      value: vi.fn(),
+    })
   })
 
   afterEach(() => {
@@ -193,5 +214,39 @@ describe('backup page workflow', () => {
     )
     expect(deleteBackups).toHaveBeenCalledWith({ fileNames: ['delete-me.zip'] })
     expect(listBackups).toHaveBeenCalledTimes(2)
+  })
+
+  it('renames downloads and uploads backups', async () => {
+    mountBackupPage([
+      {
+        fileName: 'backup.zip',
+        fileSize: 1024,
+      },
+    ])
+    await flushPromises()
+
+    await findButton('重命名').trigger('click')
+    await flushPromises()
+    await wrapper?.find<HTMLInputElement>('[data-test="backup-rename-input"] input').setValue('new.zip')
+    await findButton('保存名称').trigger('click')
+    await flushPromises()
+
+    expect(renameBackup).toHaveBeenCalledWith({ fileName: 'backup.zip', newName: 'new.zip' })
+
+    await findButton('下载').trigger('click')
+    await flushPromises()
+
+    expect(downloadBackup).toHaveBeenCalledWith('backup.zip')
+
+    const file = new File(['backup'], 'uploaded.zip')
+    const input = wrapper?.find<HTMLInputElement>('[data-test="backup-upload-input"]')
+    Object.defineProperty(input?.element, 'files', {
+      configurable: true,
+      value: [file],
+    })
+    await input?.trigger('change')
+    await flushPromises()
+
+    expect(uploadBackup).toHaveBeenCalledWith(file)
   })
 })

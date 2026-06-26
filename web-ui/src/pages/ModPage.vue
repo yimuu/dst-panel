@@ -19,15 +19,65 @@
             @keyup.enter="searchWorkshopMods"
           />
         </div>
-        <el-button
-          :icon="SearchIcon"
-          :loading="searchLoading"
-          type="primary"
-          @click="searchWorkshopMods"
-        >
+        <el-button :icon="SearchIcon" :loading="searchLoading" type="primary" @click="searchWorkshopMods">
           搜索
         </el-button>
       </el-form>
+    </el-card>
+
+    <el-card shadow="never">
+      <template #header>
+        <div class="section-header">
+          <span>本地 UGC 工具</span>
+          <span class="section-meta">Master</span>
+        </div>
+      </template>
+
+      <div class="ugc-tools">
+        <input
+          ref="ugcUploadInput"
+          class="visually-hidden"
+          data-test="ugc-upload-input"
+          multiple
+          type="file"
+          @change="handleUgcUpload"
+        />
+        <el-button :icon="Upload" :loading="ugcUploading" @click="openUgcUploadDialog">
+          上传本地 UGC
+        </el-button>
+        <el-button :icon="Refresh" :loading="ugcAcfLoading" @click="handleReadUgcAcf">
+          读取 UGC ACF
+        </el-button>
+        <el-button :icon="Delete" :loading="setupDeleting" type="danger" @click="handleDeleteSetupWorkshop">
+          清理 setup/workshop
+        </el-button>
+        <div class="delete-ugc-row">
+          <div data-test="delete-ugc-input">
+            <el-input v-model="deleteUgcWorkshopId" placeholder="workshop-123" />
+          </div>
+          <el-button :icon="Delete" :loading="ugcDeleting" type="danger" @click="handleDeleteUgcMod">
+            删除本地 UGC
+          </el-button>
+        </div>
+      </div>
+
+      <el-table
+        v-if="ugcAcfMods.length > 0"
+        class="ugc-acf-table"
+        :data="ugcAcfMods"
+        row-key="workshopId"
+      >
+        <el-table-column label="UGC 模组" min-width="220">
+          <template #default="{ row }">
+            {{ formatModName(row) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="创意工坊 ID" min-width="140">
+          <template #default="{ row }">
+            {{ getModId(row) || row.workshopId || '未知' }}
+          </template>
+        </el-table-column>
+      </el-table>
     </el-card>
 
     <el-card shadow="never">
@@ -138,12 +188,21 @@
 </template>
 
 <script setup lang="ts">
-import { Check, Refresh, Search as SearchIcon } from '@element-plus/icons-vue'
+import { Check, Delete, Refresh, Search as SearchIcon, Upload } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
 
 import { formatWorkshopId, toggleModId } from '@/features/mods/mod-selection'
-import { listMods, saveModInfo, searchMods, type ModPayload } from '@/features/mods/mod.api'
+import {
+  deleteSetupWorkshop,
+  deleteUgcMod,
+  listMods,
+  readUgcAcf,
+  saveModInfo,
+  searchMods,
+  uploadUgcMod,
+  type ModPayload,
+} from '@/features/mods/mod.api'
 import { isApiSuccess } from '@/shared/api/http'
 import type { ApiEnvelope, PageResult } from '@/shared/api/types'
 import PageState from '@/shared/components/PageState.vue'
@@ -153,9 +212,16 @@ const keyword = ref('')
 const storedMods = ref<ModSummary[]>([])
 const searchResults = ref<ModSummary[]>([])
 const selectedModIds = ref<string[]>([])
+const ugcAcfMods = ref<ModSummary[]>([])
 const storedLoading = ref(false)
 const searchLoading = ref(false)
 const saving = ref(false)
+const ugcUploading = ref(false)
+const ugcAcfLoading = ref(false)
+const setupDeleting = ref(false)
+const ugcDeleting = ref(false)
+const ugcUploadInput = ref<HTMLInputElement>()
+const deleteUgcWorkshopId = ref('')
 
 const searchEmptyText = computed(() => (searchLoading.value ? '正在搜索模组' : '暂无搜索结果'))
 const storedEmptyText = computed(() =>
@@ -252,6 +318,84 @@ async function saveSelectedMods(): Promise<void> {
     ElMessage.error(getErrorMessage(error, '模组保存失败'))
   } finally {
     saving.value = false
+  }
+}
+
+function openUgcUploadDialog(): void {
+  ugcUploadInput.value?.click()
+}
+
+async function handleUgcUpload(event: Event): Promise<void> {
+  const input = event.target as HTMLInputElement
+  const files = [...(input.files ?? [])]
+
+  if (files.length === 0) {
+    return
+  }
+
+  const formData = new FormData()
+  for (const file of files) {
+    formData.append('files', file)
+    formData.append('filePaths', file.webkitRelativePath || file.name)
+  }
+
+  ugcUploading.value = true
+
+  try {
+    assertApiSuccess(await uploadUgcMod(formData))
+    ElMessage.success('UGC 文件已上传')
+  } catch (error) {
+    ElMessage.error(getErrorMessage(error, 'UGC 文件上传失败'))
+  } finally {
+    input.value = ''
+    ugcUploading.value = false
+  }
+}
+
+async function handleReadUgcAcf(): Promise<void> {
+  ugcAcfLoading.value = true
+
+  try {
+    ugcAcfMods.value = readApiData(await readUgcAcf(), 'UGC ACF 读取失败')
+    ElMessage.success('UGC ACF 已读取')
+  } catch (error) {
+    ElMessage.error(getErrorMessage(error, 'UGC ACF 读取失败'))
+  } finally {
+    ugcAcfLoading.value = false
+  }
+}
+
+async function handleDeleteSetupWorkshop(): Promise<void> {
+  setupDeleting.value = true
+
+  try {
+    assertApiSuccess(await deleteSetupWorkshop())
+    ElMessage.success('setup/workshop 已清理')
+  } catch (error) {
+    ElMessage.error(getErrorMessage(error, 'setup/workshop 清理失败'))
+  } finally {
+    setupDeleting.value = false
+  }
+}
+
+async function handleDeleteUgcMod(): Promise<void> {
+  const workshopId = deleteUgcWorkshopId.value.trim()
+
+  if (!workshopId) {
+    ElMessage.error('请填写创意工坊 ID')
+    return
+  }
+
+  ugcDeleting.value = true
+
+  try {
+    assertApiSuccess(await deleteUgcMod(workshopId))
+    deleteUgcWorkshopId.value = ''
+    ElMessage.success('本地 UGC 已删除')
+  } catch (error) {
+    ElMessage.error(getErrorMessage(error, '本地 UGC 删除失败'))
+  } finally {
+    ugcDeleting.value = false
   }
 }
 
@@ -361,6 +505,10 @@ function readApiData<T>(response: ApiEnvelope<T>, fallbackMessage: string): T {
   return response.data
 }
 
+function assertApiSuccess(response: ApiEnvelope<unknown>): void {
+  readApiData(response, '操作失败')
+}
+
 function getErrorMessage(error: unknown, fallbackMessage: string): string {
   if (error instanceof Error && error.message) {
     return error.message
@@ -389,6 +537,34 @@ function getErrorMessage(error: unknown, fallbackMessage: string): string {
   gap: 12px;
 }
 
+.ugc-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.delete-ugc-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  min-width: min(100%, 420px);
+}
+
+.ugc-acf-table {
+  margin-top: 16px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
 .mod-name {
   color: #111827;
   font-weight: 600;
@@ -413,7 +589,8 @@ function getErrorMessage(error: unknown, fallbackMessage: string): string {
 
 @media (max-width: 640px) {
   .section-header,
-  .search-form {
+  .search-form,
+  .delete-ugc-row {
     align-items: stretch;
     grid-template-columns: 1fr;
   }

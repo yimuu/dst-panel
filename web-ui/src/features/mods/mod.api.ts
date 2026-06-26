@@ -41,3 +41,26 @@ export function saveModInfo(payload: ModPayload): Promise<ApiEnvelope<ModSummary
 export function updateModInfo(payload: ModPayload): Promise<ApiEnvelope<ModSummary>> {
   return apiPut('/api/mod/modinfo', payload)
 }
+
+export function uploadUgcMod(payload: FormData): Promise<ApiEnvelope<null>> {
+  return apiPost('/api/file/ugc/upload', payload)
+}
+
+export function deleteSetupWorkshop(): Promise<ApiEnvelope<null>> {
+  return apiDelete('/api/mod/setup/workshop')
+}
+
+export function readUgcAcf(levelName = 'Master'): Promise<ApiEnvelope<ModSummary[]>> {
+  return apiGet('/api/mod/ugc/acf', {
+    params: { levelName },
+  })
+}
+
+export function deleteUgcMod(workshopId: string, levelName = 'Master'): Promise<ApiEnvelope<null>> {
+  return apiDelete('/api/mod/ugc', {
+    params: {
+      levelName,
+      workshopId,
+    },
+  })
+}
