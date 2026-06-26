@@ -5,6 +5,7 @@ import { createPinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 
 import BackupPage from '@/pages/BackupPage.vue'
+import ClusterIniPage from '@/pages/ClusterIniPage.vue'
 import DashboardPage from '@/pages/DashboardPage.vue'
 import HelpPage from '@/pages/HelpPage.vue'
 import InitPage from '@/pages/InitPage.vue'
@@ -65,6 +66,46 @@ vi.mock('@/features/game/game.api', () => ({
     data: null,
   })),
   stopLevel: vi.fn(async () => ({
+    code: 0,
+    data: null,
+  })),
+}))
+
+vi.mock('@/features/room/room.api', () => ({
+  getClusterIni: vi.fn(async () => ({
+    code: 0,
+    data: {
+      cluster: {
+        game_mode: 'survival',
+        max_players: 8,
+        pvp: false,
+        pause_when_nobody: true,
+        vote_enabled: true,
+        vote_kick_enabled: true,
+        lan_only_cluster: false,
+        cluster_intention: 'cooperative',
+        cluster_description: '',
+        cluster_password: '',
+        cluster_name: '测试世界',
+        offline_cluster: false,
+        cluster_language: 'zh',
+        whitelist_slots: 0,
+        tick_rate: 15,
+        console_enabled: true,
+        max_snapshots: 6,
+        shard_enabled: true,
+        bind_ip: '0.0.0.0',
+        master_ip: '127.0.0.1',
+        master_port: 10888,
+        cluster_key: '',
+        steam_group_id: '',
+        steam_group_only: false,
+        steam_group_admins: false,
+      },
+      token: 'server-token',
+    },
+  })),
+  saveClusterIni: vi.fn(async () => ({
     code: 0,
     data: null,
   })),
@@ -134,6 +175,7 @@ const routePages: Array<[string, Component]> = [
   ['初始化页', InitPage],
   ['仪表盘页', DashboardPage],
   ['面板页', PanelPage],
+  ['集群设置页', ClusterIniPage],
   ['世界页', WorldLevelsPage],
   ['模组页', ModPage],
   ['备份页', BackupPage],

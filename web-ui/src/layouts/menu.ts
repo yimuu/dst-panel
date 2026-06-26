@@ -32,6 +32,17 @@ export const adminMenuItems: AdminMenuItem[] = [
     icon: Monitor,
   },
   {
+    path: routes.clusterIni,
+    label: '房间',
+    icon: HomeFilled,
+    children: [
+      {
+        path: routes.clusterIni,
+        label: '集群设置',
+      },
+    ],
+  },
+  {
     path: routes.levels,
     label: '世界',
     icon: Operation,

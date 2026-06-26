@@ -3,6 +3,7 @@ import { createRouter, createWebHashHistory, type RouteRecordRaw } from 'vue-rou
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import AuthLayout from '@/layouts/AuthLayout.vue'
 import BackupPage from '@/pages/BackupPage.vue'
+import ClusterIniPage from '@/pages/ClusterIniPage.vue'
 import DashboardPage from '@/pages/DashboardPage.vue'
 import FeatureUnavailablePage from '@/pages/FeatureUnavailablePage.vue'
 import HelpPage from '@/pages/HelpPage.vue'
@@ -49,7 +50,7 @@ const adminRoutes: RouteRecordRaw[] = [
   {
     path: appRoutes.clusterIni.slice(1),
     name: 'home-clusterIni',
-    component: FeatureUnavailablePage,
+    component: ClusterIniPage,
   },
   {
     path: appRoutes.adminlist.slice(1),
