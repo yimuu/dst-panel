@@ -77,6 +77,18 @@ describe('user profile helpers', () => {
     expect(getProfileCreatedAt({ username: 'admin' })).toBe('暂无数据')
   })
 
+  it('treats whitespace-only profile metadata as unavailable', () => {
+    expect(
+      getProfileDisplayName({
+        displayName: '   ',
+        username: '   ',
+        name: '   ',
+      }),
+    ).toBe('未登录')
+    expect(getProfileRole({ role: '   ' })).toBe('管理员')
+    expect(getProfileCreatedAt({ createdAt: '   ', created_at: '   ' })).toBe('暂无数据')
+  })
+
   it('validates and normalizes new password input', () => {
     expect(validateNewPassword('')).toBe('请输入新密码')
     expect(validateNewPassword('  ')).toBe('请输入新密码')
@@ -97,6 +109,21 @@ describe('user profile page', () => {
     expect(wrapper?.text()).toContain('admin')
     expect(wrapper?.text()).toContain('暂无数据')
     expect(wrapper?.text()).not.toContain('待接入')
+  })
+
+  it('renders whitespace-only account metadata with Chinese fallbacks', async () => {
+    mountUserProfilePage()
+    useAuthStore().user = {
+      username: '   ',
+      displayName: '   ',
+      role: '   ',
+      createdAt: '   ',
+    }
+    await flushPromises()
+
+    expect(wrapper?.text()).toContain('未登录')
+    expect(wrapper?.text()).toContain('管理员')
+    expect(wrapper?.text()).toContain('暂无数据')
   })
 
   it('blocks short passwords before calling the API', async () => {

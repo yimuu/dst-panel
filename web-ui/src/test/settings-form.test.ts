@@ -147,4 +147,78 @@ describe('settings form', () => {
       }),
     ).toBe('测试分支必须是关闭或开启')
   })
+
+  it('keeps invalid submitted bin and beta values long enough for validation to reject them', () => {
+    const baseConfig = {
+      steamcmd: '/opt/steamcmd',
+      force_install_dir: '/srv/dst',
+      donot_starve_server_directory: '',
+      cluster: 'Cluster_1',
+      backup: '/srv/backup',
+      mod_download_path: '/srv/mods',
+      ugc_directory: '',
+      persistent_storage_root: '',
+      conf_dir: '',
+    }
+
+    expect(
+      validateDstConfig(
+        prepareDstConfigForSave({
+          ...baseConfig,
+          bin: undefined,
+          beta: 1,
+        }),
+      ),
+    ).toBe('运行位数必须是 32 或 64')
+
+    expect(
+      validateDstConfig(
+        prepareDstConfigForSave({
+          ...baseConfig,
+          bin: Number.NaN,
+          beta: 1,
+        }),
+      ),
+    ).toBe('运行位数必须是 32 或 64')
+
+    expect(
+      validateDstConfig(
+        prepareDstConfigForSave({
+          ...baseConfig,
+          bin: '64' as unknown as number,
+          beta: 1,
+        }),
+      ),
+    ).toBe('运行位数必须是 32 或 64')
+
+    expect(
+      validateDstConfig(
+        prepareDstConfigForSave({
+          ...baseConfig,
+          bin: 64,
+          beta: undefined,
+        }),
+      ),
+    ).toBe('测试分支必须是关闭或开启')
+
+    expect(
+      validateDstConfig(
+        prepareDstConfigForSave({
+          ...baseConfig,
+          bin: 64,
+          beta: Number.NaN,
+        }),
+      ),
+    ).toBe('测试分支必须是关闭或开启')
+
+    expect(
+      validateDstConfig(
+        prepareDstConfigForSave({
+          ...baseConfig,
+          bin: 64,
+          beta: '1' as unknown as number,
+        }),
+      ),
+    ).toBe('测试分支必须是关闭或开启')
+  })
 })

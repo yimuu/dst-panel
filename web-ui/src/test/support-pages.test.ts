@@ -188,6 +188,38 @@ describe('support pages', () => {
     })
   })
 
+  it('reloads settings from the backend after saving and applies the refreshed values', async () => {
+    getDstConfig.mockResolvedValueOnce(success(dstConfigFixture)).mockResolvedValueOnce(
+      success({
+        ...dstConfigFixture,
+        force_install_dir: '/srv/dst-reloaded',
+      }),
+    )
+
+    mountPage(SettingsPage)
+    await flushPromises()
+
+    await wrapper
+      ?.find<HTMLInputElement>('[data-test="force-install-dir-input"] input')
+      .setValue('/srv/dst-local-edit')
+    await findButton('保存设置').trigger('click')
+    await flushPromises()
+
+    expect(saveDstConfig).toHaveBeenCalledWith({
+      ...dstConfigFixture,
+      force_install_dir: '/srv/dst-local-edit',
+    })
+    expect(getDstConfig).toHaveBeenCalledTimes(2)
+
+    const secondFetchOrder = getDstConfig.mock.invocationCallOrder[1]
+
+    expect(secondFetchOrder).toBeDefined()
+    expect(secondFetchOrder!).toBeGreaterThan(saveDstConfig.mock.invocationCallOrder[0]!)
+    expect(
+      wrapper?.find<HTMLInputElement>('[data-test="force-install-dir-input"] input').element.value,
+    ).toBe('/srv/dst-reloaded')
+  })
+
   it('changes the current user password with the supported payload', async () => {
     mountPage(UserProfilePage)
     useAuthStore().user = {

@@ -43,5 +43,10 @@ export function validateNewPassword(value: string): string | null {
 }
 
 function readString(value: unknown): string {
-  return typeof value === 'string' && value.length > 0 ? value : ''
+  if (typeof value !== 'string') {
+    return ''
+  }
+
+  const normalized = value.trim()
+  return normalized.length > 0 ? normalized : ''
 }

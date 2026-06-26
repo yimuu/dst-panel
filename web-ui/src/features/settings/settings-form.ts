@@ -67,8 +67,8 @@ export function prepareDstConfigForSave(config: Partial<DstConfig>): DstConfig {
     cluster: readString(config.cluster, defaults.cluster).trim(),
     backup: readString(config.backup, defaults.backup).trim(),
     mod_download_path: readString(config.mod_download_path, defaults.mod_download_path).trim(),
-    bin: readNumber(config.bin, defaults.bin),
-    beta: readNumber(config.beta, defaults.beta),
+    bin: readSubmittedNumber(config.bin, defaults.bin),
+    beta: readSubmittedNumber(config.beta, defaults.beta),
     ugc_directory: readString(config.ugc_directory, defaults.ugc_directory).trim(),
     persistent_storage_root: readString(
       config.persistent_storage_root,
@@ -96,4 +96,20 @@ function readString(value: unknown, fallback: string): string {
 
 function readNumber(value: unknown, fallback: number): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback
+}
+
+function readSubmittedNumber(value: unknown, fallback: number): number {
+  if (value === undefined) {
+    return value as unknown as number
+  }
+
+  if (typeof value === 'number') {
+    return value
+  }
+
+  if (value === null) {
+    return value as unknown as number
+  }
+
+  return (value as number) ?? fallback
 }
