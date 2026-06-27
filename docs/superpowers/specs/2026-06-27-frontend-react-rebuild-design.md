@@ -51,7 +51,7 @@ Use Vite's latest React TypeScript scaffold in a temporary directory, then repla
 
 Use latest stable npm packages available at rebuild time and commit `package-lock.json` for reproducibility.
 
-Known latest versions checked on June 27, 2026:
+Known versions checked on June 27, 2026:
 
 - `react@19.2.7`
 - `react-dom@19.2.7`
@@ -59,7 +59,7 @@ Known latest versions checked on June 27, 2026:
 - `vite@8.1.0`
 - `@vitejs/plugin-react@6.0.3`
 - `typescript@6.0.3`
-- `antd@6.4.5`
+- `antd@5.29.3`
 - `@ant-design/icons@6.3.1`
 - `@ant-design/pro-components@2.8.10`
 - `@tanstack/react-query@5.101.1`
@@ -72,7 +72,9 @@ Known latest versions checked on June 27, 2026:
 - `eslint@10.6.0`
 - `prettier@3.8.5`
 
-If any listed latest package has a peer dependency conflict with the scaffold, resolve by selecting the newest compatible stable version and document the exception in the implementation plan.
+`antd@6.4.5` is the npm latest release on June 27, 2026, but it is not selected because `@ant-design/pro-components@2.8.10` declares peer support for `antd ^4.24.15 || ^5.11.2`. Use `antd@5.29.3`, the newest Ant Design 5 release found during version discovery, so the Ant Design Pro component stack installs without peer dependency conflicts.
+
+If any other listed latest package has a peer dependency conflict with the scaffold, resolve by selecting the newest compatible stable version and document the exception in the implementation plan.
 
 ## Frontend Stack
 
