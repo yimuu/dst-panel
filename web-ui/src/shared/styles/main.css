@@ -70,6 +70,14 @@ button {
   width: min(420px, 100%);
 }
 
+.route-loading {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  color: #595959;
+  background: #f0f2f5;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;

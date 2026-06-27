@@ -21,7 +21,7 @@ import SettingsPage from '@/pages/SettingsPage'
 import UserProfilePage from '@/pages/UserProfilePage'
 import WorldLevelsPage from '@/pages/WorldLevelsPage'
 import WorldModSelectionPage from '@/pages/WorldModSelectionPage'
-import { getCurrentUser } from '@/features/auth/auth.api'
+import { getCurrentUser, getInitStatus } from '@/features/auth/auth.api'
 import {
   clearAuthRouteState,
   getAuthRedirect,
@@ -32,31 +32,37 @@ import { routes } from '@/shared/config/routes'
 
 function RouteGuard({ publicRoute = false }: { publicRoute?: boolean }) {
   const location = useLocation()
-  const { firstRun, authenticated } = readAuthRouteState()
-  const shouldVerifySession = !publicRoute && !firstRun && authenticated
+  const localState = readAuthRouteState()
+  const initQuery = useQuery({
+    queryKey: ['auth', 'init-status'],
+    queryFn: getInitStatus,
+  })
+  const firstRun = initQuery.isSuccess ? isApiSuccess(initQuery.data) : localState.firstRun
+  const initResolved = initQuery.isSuccess || initQuery.isError
+  const shouldVerifySession = !publicRoute && initResolved && !firstRun
   const userQuery = useQuery({
     queryKey: ['auth', 'current-user'],
     queryFn: getCurrentUser,
     enabled: shouldVerifySession,
   })
 
-  const backendAuthenticated = shouldVerifySession
+  const authenticated = shouldVerifySession
     ? userQuery.isSuccess && isApiSuccess(userQuery.data)
-    : authenticated
+    : false
 
   useEffect(() => {
-    if (shouldVerifySession && !userQuery.isPending && !backendAuthenticated) {
+    if (shouldVerifySession && !userQuery.isPending && !authenticated) {
       clearAuthRouteState()
     }
-  }, [backendAuthenticated, shouldVerifySession, userQuery.isPending])
+  }, [authenticated, shouldVerifySession, userQuery.isPending])
 
-  if (shouldVerifySession && userQuery.isPending) {
+  if (initQuery.isPending || (shouldVerifySession && userQuery.isPending)) {
     return <div className="route-loading">加载中</div>
   }
 
   const redirect = getAuthRedirect({
     firstRun,
-    authenticated: backendAuthenticated,
+    authenticated,
     publicRoute,
     path: location.pathname,
   })

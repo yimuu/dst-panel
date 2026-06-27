@@ -62,6 +62,13 @@ describe('auth route decisions', () => {
   it('redirects anonymous users away from protected routes', async () => {
     window.location.hash = routes.panel
     window.sessionStorage.clear()
+    api.defaults.adapter = async (config) => {
+      if (config.url === '/api/init') {
+        return mockApiResponse({ code: 400, msg: 'is not first', data: null })
+      }
+
+      return mockApiResponse({ code: 401, msg: '未登录', data: null })
+    }
 
     render(<App />)
 
@@ -72,7 +79,13 @@ describe('auth route decisions', () => {
   it('rejects stale local sessions when the backend user check fails', async () => {
     window.location.hash = routes.panel
     setAuthRouteState({ firstRun: false, authenticated: true })
-    const adapter = vi.fn(async () => mockApiResponse({ code: 401, msg: '未登录', data: null }))
+    const adapter = vi.fn(async (config) => {
+      if (config.url === '/api/init') {
+        return mockApiResponse({ code: 400, msg: 'is not first', data: null })
+      }
+
+      return mockApiResponse({ code: 401, msg: '未登录', data: null })
+    })
     api.defaults.adapter = adapter
 
     render(<App />)
@@ -84,21 +97,55 @@ describe('auth route decisions', () => {
     expect(screen.queryByText('服务器控制面板加载中')).not.toBeInTheDocument()
   })
 
-  it('does not unlock protected routes when login fails', async () => {
-    window.location.hash = routes.login
-    const adapter = vi.fn(async () =>
-      mockApiResponse({ code: 401, msg: 'User authentication failed', data: null }),
-    )
+  it('allows protected routes for valid backend sessions without local state', async () => {
+    window.location.hash = routes.panel
+    const adapter = vi.fn(async (config) => {
+      if (config.url === '/api/init') {
+        return mockApiResponse({ code: 400, msg: 'is not first', data: null })
+      }
+
+      return mockApiResponse({ code: 200, msg: 'Init user success', data: { username: 'admin' } })
+    })
     api.defaults.adapter = adapter
 
     render(<App />)
 
-    fireEvent.change(screen.getByPlaceholderText('请输入用户名'), { target: { value: 'wrong' } })
+    expect(await screen.findByText('服务器控制面板加载中')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /登\s*录/ })).not.toBeInTheDocument()
+  })
+
+  it('sends protected routes to init when the backend is in first-run mode', async () => {
+    window.location.hash = routes.panel
+    const adapter = vi.fn(async () => mockApiResponse({ code: 200, msg: 'is first', data: null }))
+    api.defaults.adapter = adapter
+
+    render(<App />)
+
+    expect(await screen.findByText('初始化管理员')).toBeInTheDocument()
+    expect(screen.queryByText('服务器控制面板加载中')).not.toBeInTheDocument()
+  })
+
+  it('does not unlock protected routes when login fails', async () => {
+    window.location.hash = routes.login
+    const adapter = vi.fn(async (config) => {
+      if (config.url === '/api/init') {
+        return mockApiResponse({ code: 400, msg: 'is not first', data: null })
+      }
+
+      return mockApiResponse({ code: 401, msg: 'User authentication failed', data: null })
+    })
+    api.defaults.adapter = adapter
+
+    render(<App />)
+
+    fireEvent.change(await screen.findByPlaceholderText('请输入用户名'), {
+      target: { value: 'wrong' },
+    })
     fireEvent.change(screen.getByPlaceholderText('请输入密码'), { target: { value: 'bad' } })
     fireEvent.click(screen.getByRole('button', { name: /登\s*录/ }))
 
     await waitFor(() => {
-      expect(adapter).toHaveBeenCalled()
+      expect(adapter).toHaveBeenCalledWith(expect.objectContaining({ url: '/api/login' }))
     })
     await waitFor(() => {
       expect(readAuthRouteState().authenticated).toBe(false)
