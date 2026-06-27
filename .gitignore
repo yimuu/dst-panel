@@ -2,6 +2,7 @@
 
 # dependencies
 /dist
+/web-ui/dist
 /dst
 /target/
 .idea

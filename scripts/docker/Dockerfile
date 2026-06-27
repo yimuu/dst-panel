@@ -1,3 +1,10 @@
+FROM node:24-bookworm-slim AS frontend-build
+WORKDIR /app/web-ui
+COPY web-ui/package.json web-ui/package-lock.json /app/web-ui/
+RUN npm ci
+COPY web-ui /app/web-ui
+RUN npm run build
+
 # 使用官方的Ubuntu基础镜像
 FROM ubuntu:20.04
 
@@ -36,7 +43,7 @@ RUN chmod 755 /app/docker-entrypoint.sh
 
 COPY config.yml /app/config.yml
 COPY docker_dst_config /app/dst_config
-COPY dist /app/dist
+COPY --from=frontend-build /app/web-ui/dist /app/dist
 COPY static /app/static
 
 # 内嵌源配置信息

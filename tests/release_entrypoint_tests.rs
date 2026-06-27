@@ -35,16 +35,35 @@ fn assert_no_legacy_docker_paths(label: &str, contents: &str) {
     }
 }
 
-fn root_asset_paths_from_index(index: &str) -> Vec<String> {
-    let mut paths = Vec::new();
-    for marker in ["src=\"/", "href=\"/"] {
-        for fragment in index.split(marker).skip(1) {
-            if let Some((path, _)) = fragment.split_once('"') {
-                paths.push(path.to_string());
-            }
-        }
-    }
-    paths
+fn assert_dockerfile_builds_frontend(path: &str, dockerfile: &str) {
+    assert!(
+        dockerfile.contains("FROM node:24-bookworm-slim AS frontend-build"),
+        "{path} should build frontend assets in a dedicated Node stage"
+    );
+    assert!(
+        dockerfile.contains("COPY web-ui/package.json web-ui/package-lock.json /app/web-ui/"),
+        "{path} should copy frontend package metadata before npm ci"
+    );
+    assert!(
+        dockerfile.contains("RUN npm ci"),
+        "{path} should install frontend dependencies from package-lock.json"
+    );
+    assert!(
+        dockerfile.contains("COPY web-ui /app/web-ui"),
+        "{path} should copy frontend source into the build stage"
+    );
+    assert!(
+        dockerfile.contains("RUN npm run build"),
+        "{path} should compile frontend assets during image build"
+    );
+    assert!(
+        dockerfile.contains("COPY --from=frontend-build /app/web-ui/dist /app/dist"),
+        "{path} should package the built frontend under /app/dist"
+    );
+    assert!(
+        !dockerfile.contains("COPY dist /app/dist"),
+        "{path} should not require committed root dist artifacts"
+    );
 }
 
 #[cfg(unix)]
@@ -259,69 +278,57 @@ fn docker_entrypoint_maps_config_data_dir_to_data_volume() {
 }
 
 #[test]
-fn docker_context_contains_dist_directory_for_clean_checkout_builds() {
-    let index_path = repo_path("dist/index.html");
-    assert!(
-        index_path.is_file(),
-        "Dockerfile copies dist, so a clean checkout must include a dist directory"
-    );
-    let index = fs::read_to_string(&index_path).expect("read dist/index.html");
-    assert!(
-        index.contains("assets/index-") && index.contains("<script type=\"module\""),
-        "dist/index.html should be the production frontend shell, not a placeholder"
-    );
-    let asset_paths = root_asset_paths_from_index(&index);
-    assert!(
-        !asset_paths.is_empty(),
-        "dist/index.html should reference compiled frontend assets"
-    );
-    for asset_path in asset_paths {
-        assert!(
-            repo_path(&format!("dist/{asset_path}")).is_file(),
-            "dist/index.html references a missing asset: /{asset_path}"
-        );
+fn docker_context_builds_frontend_from_source_for_clean_checkout_builds() {
+    for path in ["Dockerfile", "scripts/docker/Dockerfile"] {
+        let dockerfile = repo_file(path);
+        assert_dockerfile_builds_frontend(path, &dockerfile);
     }
     assert!(
-        repo_path("dist/assets").is_dir(),
-        "production frontend assets should be checked in for clean Docker builds"
+        !repo_path("dist/index.html").exists(),
+        "root dist/index.html should not be committed; Docker must build it from web-ui"
     );
     assert!(
-        repo_path("dist/misc").is_dir(),
-        "production frontend misc data should be checked in for clean Docker builds"
+        !repo_path("dist/assets").exists(),
+        "root dist/assets should not be committed; generated assets belong under web-ui/dist"
     );
     assert!(
-        !repo_path("dist/mockServiceWorker.js").exists() && !index.contains("mockServiceWorker"),
-        "release dist must not use the mocked preview frontend"
+        repo_path("web-ui/public/misc").is_dir(),
+        "frontend public misc data should live with the frontend source"
     );
 }
 
 #[test]
-fn frontend_dist_docker_references_use_rust_data_volume_layout() {
-    let compose = repo_file("dist/misc/Docker-compose.md");
+fn frontend_source_docker_references_use_rust_data_volume_layout() {
+    let compose = repo_file("web-ui/public/misc/Docker-compose.md");
     assert!(compose.contains("dst-admin-rust"));
     assert!(compose.contains("yimuu/dst-panel"));
     assert!(compose.contains("- ${PWD}/dstsave:/data"));
-    assert_no_legacy_docker_paths("dist/misc/Docker-compose.md", &compose);
+    assert_no_legacy_docker_paths("web-ui/public/misc/Docker-compose.md", &compose);
 
-    let mut js_bundle = String::new();
-    for entry in fs::read_dir(repo_path("dist/assets")).expect("read dist/assets") {
-        let entry = entry.expect("read dist asset entry");
-        let path = entry.path();
-        if path.extension().and_then(|extension| extension.to_str()) == Some("js") {
-            js_bundle.push_str(
-                &fs::read_to_string(&path)
-                    .unwrap_or_else(|error| panic!("read {}: {error}", path.display())),
-            );
-        }
-    }
+    let help_page = repo_file("web-ui/src/pages/HelpPage.tsx");
     assert!(
-        js_bundle.contains("Docker 路径参考"),
-        "frontend bundle should include the Docker path reference drawer"
+        help_page.contains("/misc/Docker-compose.md"),
+        "help page should link to the source-controlled Docker compose guide"
     );
-    assert!(js_bundle.contains("/data/backup"));
-    assert!(js_bundle.contains("/data/dst-dedicated-server"));
-    assert!(js_bundle.contains("yimuu/dst-panel"));
-    assert_no_legacy_docker_paths("dist/assets/*.js", &js_bundle);
+    assert_no_legacy_docker_paths("web-ui/src/pages/HelpPage.tsx", &help_page);
+}
+
+#[test]
+fn docker_context_ignores_generated_frontend_artifacts() {
+    let dockerignore = repo_file(".dockerignore");
+    for ignored in [
+        ".git",
+        "target",
+        "dist",
+        "web-ui/dist",
+        "web-ui/node_modules",
+        "web-ui/coverage",
+    ] {
+        assert!(
+            dockerignore.lines().any(|line| line.trim() == ignored),
+            ".dockerignore should exclude {ignored} from Docker build context"
+        );
+    }
 }
 
 #[test]
@@ -418,7 +425,7 @@ fn mac_arm_docker_release_uses_root_context_and_data_volume() {
             dockerfile.contains(&format!("COPY {base}/docker_dst_config /app/dst_config")),
             "{base}/Dockerfile should copy its DST config from a repository-root build context"
         );
-        assert!(dockerfile.contains("COPY dist /app/dist"));
+        assert_dockerfile_builds_frontend(&format!("{base}/Dockerfile"), &dockerfile);
         assert!(dockerfile.contains("COPY static /app/static"));
 
         let entrypoint = repo_file(&format!("{base}/docker-entrypoint.sh"));
