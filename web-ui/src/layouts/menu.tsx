@@ -24,22 +24,20 @@ export const adminMenuItems: AdminMenuItem[] = [
   { path: routes.dashboard, name: '统计面板', icon: <DashboardOutlined /> },
   { path: routes.panel, name: '面板操作', icon: <CloudServerOutlined /> },
   {
-    path: '/home',
+    path: routes.clusterIni,
     name: '房间设置',
     icon: <HomeOutlined />,
     children: [
-      { path: routes.clusterIni, name: '房间设置' },
       { path: routes.adminlist, name: '管理员列表' },
       { path: routes.whitelist, name: '白名单列表' },
       { path: routes.blacklist, name: '黑名单列表' },
     ],
   },
   {
-    path: '/levels',
+    path: routes.levels,
     name: '世界设置',
     icon: <ToolOutlined />,
     children: [
-      { path: routes.levels, name: '世界设置' },
       { path: routes.selectorMod, name: '多层选择器' },
       { path: routes.preinstall, name: '世界模板' },
       { path: routes.genMap, name: '预览地图' },
@@ -59,5 +57,7 @@ export const adminMenuItems: AdminMenuItem[] = [
 ]
 
 export function flattenAdminMenuItems(items: AdminMenuItem[] = adminMenuItems): AdminMenuItem[] {
-  return items.flatMap((item) => (item.children ? flattenAdminMenuItems(item.children) : [item]))
+  return items.flatMap((item) =>
+    item.children ? [item, ...flattenAdminMenuItems(item.children)] : [item],
+  )
 }

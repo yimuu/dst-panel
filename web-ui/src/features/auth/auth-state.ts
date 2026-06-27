@@ -39,6 +39,11 @@ export function markAuthenticated(): void {
   setAuthRouteState({ firstRun: false, authenticated: true })
 }
 
+export function clearAuthRouteState(storage = getSessionStorage()): void {
+  storage?.removeItem(FIRST_RUN_KEY)
+  storage?.removeItem(AUTHENTICATED_KEY)
+}
+
 export function getAuthRedirect(decision: AuthRouteDecision): string | undefined {
   if (decision.firstRun && decision.path !== routes.init) {
     return routes.init

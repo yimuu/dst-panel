@@ -1,20 +1,41 @@
 import { ProCard } from '@ant-design/pro-components'
-import { Button, Form, Input } from 'antd'
+import { App as AntApp, Button, Form, Input } from 'antd'
 import { useNavigate } from 'react-router'
 
-import { markAuthenticated } from '@/features/auth/auth-state'
+import { initFirstRun } from '@/features/auth/auth.api'
+import { assertApiSuccess, getErrorMessage } from '@/shared/api/envelope'
 import { routes } from '@/shared/config/routes'
+
+interface InitFormValues {
+  username: string
+  password: string
+}
 
 export default function InitPage() {
   const navigate = useNavigate()
+  const { message } = AntApp.useApp()
 
   return (
     <ProCard className="auth-card" title="初始化管理员" bordered={false}>
       <Form
         layout="vertical"
-        onFinish={() => {
-          markAuthenticated()
-          navigate(routes.panel, { replace: true })
+        onFinish={async (values: InitFormValues) => {
+          try {
+            assertApiSuccess(
+              await initFirstRun({
+                userInfo: {
+                  username: values.username,
+                  password: values.password,
+                  displayName: values.username,
+                  photoURL: '',
+                },
+              }),
+            )
+            message.success('初始化完成，请登录')
+            navigate(routes.login, { replace: true })
+          } catch (error) {
+            message.error(getErrorMessage(error, '初始化失败'))
+          }
         }}
       >
         <Form.Item

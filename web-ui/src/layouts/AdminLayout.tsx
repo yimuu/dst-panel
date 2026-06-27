@@ -39,6 +39,10 @@ export default function AdminLayout() {
       )}
       actionsRender={() => [<AppHeader key="app-header" />]}
       menuItemRender={(item, dom) => {
+        if (item.children) {
+          return dom
+        }
+
         if (!item.path) {
           return dom
         }

@@ -23,4 +23,9 @@ describe('admin menu', () => {
     expect(labels).not.toContain('Dashboard')
     expect(labels).not.toContain('Github')
   })
+
+  it('keeps grouped menu parents on real route paths', () => {
+    expect(adminMenuItems.find((item) => item.name === '房间设置')?.path).toBe(routes.clusterIni)
+    expect(adminMenuItems.find((item) => item.name === '世界设置')?.path).toBe(routes.levels)
+  })
 })

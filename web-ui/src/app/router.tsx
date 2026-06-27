@@ -1,3 +1,5 @@
+import { useEffect } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { createHashRouter, Navigate, Outlet, RouterProvider, useLocation } from 'react-router'
 
 import AdminLayout from '@/layouts/AdminLayout'
@@ -19,15 +21,42 @@ import SettingsPage from '@/pages/SettingsPage'
 import UserProfilePage from '@/pages/UserProfilePage'
 import WorldLevelsPage from '@/pages/WorldLevelsPage'
 import WorldModSelectionPage from '@/pages/WorldModSelectionPage'
-import { getAuthRedirect, readAuthRouteState } from '@/features/auth/auth-state'
+import { getCurrentUser } from '@/features/auth/auth.api'
+import {
+  clearAuthRouteState,
+  getAuthRedirect,
+  readAuthRouteState,
+} from '@/features/auth/auth-state'
+import { isApiSuccess } from '@/shared/api/envelope'
 import { routes } from '@/shared/config/routes'
 
 function RouteGuard({ publicRoute = false }: { publicRoute?: boolean }) {
   const location = useLocation()
   const { firstRun, authenticated } = readAuthRouteState()
+  const shouldVerifySession = !publicRoute && !firstRun && authenticated
+  const userQuery = useQuery({
+    queryKey: ['auth', 'current-user'],
+    queryFn: getCurrentUser,
+    enabled: shouldVerifySession,
+  })
+
+  const backendAuthenticated = shouldVerifySession
+    ? userQuery.isSuccess && isApiSuccess(userQuery.data)
+    : authenticated
+
+  useEffect(() => {
+    if (shouldVerifySession && !userQuery.isPending && !backendAuthenticated) {
+      clearAuthRouteState()
+    }
+  }, [backendAuthenticated, shouldVerifySession, userQuery.isPending])
+
+  if (shouldVerifySession && userQuery.isPending) {
+    return <div className="route-loading">加载中</div>
+  }
+
   const redirect = getAuthRedirect({
     firstRun,
-    authenticated,
+    authenticated: backendAuthenticated,
     publicRoute,
     path: location.pathname,
   })

@@ -7,8 +7,23 @@ export interface LoginPayload {
   password: string
 }
 
+export interface InitPayload {
+  userInfo: {
+    username: string
+    password: string
+    displayName?: string
+    photoURL?: string
+  }
+  dstConfig?: Record<string, unknown>
+}
+
 export async function getInitStatus(): Promise<ApiEnvelope<unknown>> {
   const response = await api.get<ApiEnvelope<unknown>>('/api/init')
+  return response.data
+}
+
+export async function initFirstRun(payload: InitPayload): Promise<ApiEnvelope<unknown>> {
+  const response = await api.post<ApiEnvelope<unknown>>('/api/init', payload)
   return response.data
 }
 
