@@ -73,7 +73,7 @@ describe('auth route decisions', () => {
     render(<App />)
 
     expect(await screen.findByRole('button', { name: /登\s*录/ })).toBeInTheDocument()
-    expect(screen.queryByText('服务器控制面板加载中')).not.toBeInTheDocument()
+    expect(screen.queryByText('服务器信息')).not.toBeInTheDocument()
   })
 
   it('rejects stale local sessions when the backend user check fails', async () => {
@@ -94,7 +94,7 @@ describe('auth route decisions', () => {
       expect(adapter).toHaveBeenCalled()
     })
     expect(await screen.findByRole('button', { name: /登\s*录/ })).toBeInTheDocument()
-    expect(screen.queryByText('服务器控制面板加载中')).not.toBeInTheDocument()
+    expect(screen.queryByText('服务器信息')).not.toBeInTheDocument()
   })
 
   it('allows protected routes for valid backend sessions without local state', async () => {
@@ -110,7 +110,7 @@ describe('auth route decisions', () => {
 
     render(<App />)
 
-    expect(await screen.findByText('服务器控制面板加载中')).toBeInTheDocument()
+    expect(await screen.findByText('服务器信息')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /登\s*录/ })).not.toBeInTheDocument()
   })
 
@@ -122,7 +122,7 @@ describe('auth route decisions', () => {
     render(<App />)
 
     expect(await screen.findByText('初始化管理员')).toBeInTheDocument()
-    expect(screen.queryByText('服务器控制面板加载中')).not.toBeInTheDocument()
+    expect(screen.queryByText('服务器信息')).not.toBeInTheDocument()
   })
 
   it('does not unlock protected routes when login fails', async () => {
@@ -150,6 +150,6 @@ describe('auth route decisions', () => {
     await waitFor(() => {
       expect(readAuthRouteState().authenticated).toBe(false)
     })
-    expect(screen.queryByText('服务器控制面板加载中')).not.toBeInTheDocument()
+    expect(screen.queryByText('服务器信息')).not.toBeInTheDocument()
   })
 })

@@ -1,5 +1,10 @@
 import '@testing-library/jest-dom/vitest'
-import { vi } from 'vitest'
+import { cleanup } from '@testing-library/react'
+import { afterEach, vi } from 'vitest'
+
+afterEach(() => {
+  cleanup()
+})
 
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
@@ -13,4 +18,11 @@ Object.defineProperty(window, 'matchMedia', {
     removeEventListener: vi.fn(),
     dispatchEvent: vi.fn(),
   })),
+})
+
+const getComputedStyle = window.getComputedStyle
+
+Object.defineProperty(window, 'getComputedStyle', {
+  writable: true,
+  value: (element: Element) => getComputedStyle(element),
 })

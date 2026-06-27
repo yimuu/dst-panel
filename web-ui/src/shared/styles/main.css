@@ -78,6 +78,267 @@ button {
   background: #f0f2f5;
 }
 
+.dashboard-page,
+.panel-page {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.dashboard-toolbar .ant-pro-card-body {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.dashboard-summary-grid,
+.dashboard-chart-grid,
+.dashboard-bottom-grid,
+.panel-content-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.activity-chart {
+  min-height: 360px;
+}
+
+.chart-legend {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-bottom: 16px;
+  color: #1f1f1f;
+}
+
+.legend-line::before,
+.legend-bar::before,
+.role-legend span {
+  display: inline-block;
+  width: 20px;
+  height: 8px;
+  margin-right: 6px;
+  content: '';
+  border-radius: 999px;
+}
+
+.legend-line::before {
+  background: #f5c542;
+}
+
+.legend-bar::before,
+.role-legend span {
+  background: #5b6fc7;
+}
+
+.chart-plot {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  min-height: 310px;
+}
+
+.chart-y-axis,
+.chart-bars {
+  display: flex;
+}
+
+.chart-y-axis {
+  flex-direction: column;
+  justify-content: space-between;
+  color: #8c8c8c;
+  font-size: 12px;
+}
+
+.chart-bars {
+  align-items: end;
+  justify-content: space-between;
+  border-bottom: 1px solid #edf0f5;
+  background: repeating-linear-gradient(to bottom, #ffffff, #ffffff 60px, #edf0f5 61px);
+}
+
+.chart-day {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  width: 13%;
+  height: 280px;
+  padding-bottom: 22px;
+}
+
+.activity-bar {
+  align-self: end;
+  width: 28px;
+  height: 0;
+  background: #3f68c5;
+  border-radius: 4px 4px 0 0;
+}
+
+.activity-bar.active {
+  height: 250px;
+}
+
+.activity-dot {
+  position: absolute;
+  bottom: 20px;
+  width: 8px;
+  height: 8px;
+  background: #f5c542;
+  border-radius: 50%;
+}
+
+.activity-dot.active {
+  bottom: 268px;
+}
+
+.chart-day-label {
+  position: absolute;
+  bottom: 0;
+  color: #8c8c8c;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.role-ratio-card {
+  display: grid;
+  min-height: 360px;
+  align-items: center;
+  justify-items: center;
+}
+
+.role-legend {
+  justify-self: start;
+  color: #1f1f1f;
+}
+
+.role-donut {
+  display: grid;
+  width: 260px;
+  height: 260px;
+  place-items: center;
+  background: radial-gradient(circle, #fff 0 34%, transparent 35%), conic-gradient(#5b6fc7 0 100%);
+  border-radius: 50%;
+}
+
+.panel-tabs {
+  margin-top: -8px;
+}
+
+.panel-resource-card .ant-pro-card-body {
+  padding-block: 18px;
+}
+
+.stat-sub {
+  display: block;
+  margin-top: 4px;
+  color: #8c8c8c;
+  font-size: 12px;
+}
+
+.panel-left-column,
+.panel-right-column {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  min-width: 0;
+}
+
+.panel-content-grid > * {
+  min-width: 0;
+}
+
+.panel-content-grid .ant-pro-card,
+.panel-content-grid .ant-pro-card-header,
+.panel-content-grid .ant-pro-card-body {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.panel-content-grid .ant-pro-card-header {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.panel-action-row,
+.rollback-row,
+.player-toolbar {
+  margin-bottom: 16px;
+}
+
+.server-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 28px 64px;
+}
+
+.server-info-item {
+  display: grid;
+  gap: 10px;
+}
+
+.level-badge {
+  display: inline-grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  color: #fff;
+  font-weight: 700;
+  background: #4f46e5;
+  border-radius: 8px;
+}
+
+.server-log {
+  height: 390px;
+  min-width: 0;
+  padding: 12px;
+  overflow: auto;
+  color: #262626;
+  background: #fff;
+  border: 1px solid #edf0f5;
+  border-radius: 8px;
+}
+
+.server-log-line {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 10px;
+  width: max-content;
+  min-width: 100%;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.server-log-line span {
+  color: #2f80a7;
+  text-align: right;
+}
+
+.server-log-line code {
+  color: #b42318;
+  white-space: pre;
+}
+
+.command-input {
+  margin-top: 16px;
+}
+
+@media (max-width: 960px) {
+  .dashboard-summary-grid,
+  .dashboard-chart-grid,
+  .dashboard-bottom-grid,
+  .panel-content-grid,
+  .server-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-toolbar .ant-pro-card-body {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
