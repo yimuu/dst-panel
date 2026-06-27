@@ -1,17 +1,16 @@
 import { describe, expect, it } from 'vitest'
 
-import { formatBackupSize, getBackupActionLabel } from '@/features/backups/backup-format'
+import { formatBackupSize, formatBackupTime } from '@/features/backups/backup-format'
 
-describe('backup formatting', () => {
-  it('formats byte sizes for table display', () => {
+describe('backup format', () => {
+  it('formats byte sizes for backup tables', () => {
     expect(formatBackupSize(0)).toBe('0 B')
-    expect(formatBackupSize(1024)).toBe('1.0 KB')
-    expect(formatBackupSize(1048576)).toBe('1.0 MB')
+    expect(formatBackupSize(1024)).toBe('1.00 KB')
+    expect(formatBackupSize(1024 * 1024)).toBe('1.00 MB')
   })
 
-  it('uses Chinese action labels', () => {
-    expect(getBackupActionLabel('create')).toBe('创建备份')
-    expect(getBackupActionLabel('restore')).toBe('恢复')
-    expect(getBackupActionLabel('delete')).toBe('删除')
+  it('formats unix timestamps for backup tables', () => {
+    expect(formatBackupTime(1712828023)).toContain('2024')
+    expect(formatBackupTime(0)).toBe('-')
   })
 })

@@ -4,6 +4,7 @@ export interface CurrentUser {
   username?: string
   name?: string
   displayName?: string
+  photoURL?: string
   role?: string
   createdAt?: string
   created_at?: string
@@ -15,6 +16,7 @@ export interface UserProfile {
   username?: string
   displayName?: string
   name?: string
+  photoURL?: string
   role?: string
   avatar?: string
   token?: string

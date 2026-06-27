@@ -1,58 +1,66 @@
-import { apiDelete, apiGet, apiPost, apiPut, http } from '@/shared/api/http'
+import { apiDelete, apiGet, apiPost, apiPut } from '@/shared/api/http'
 import type { ApiEnvelope } from '@/shared/api/types'
-import type { BackupFile } from '@/shared/types/domain'
 
-export interface CreateBackupRequest {
-  backupName?: string
-  [key: string]: unknown
-}
-
-export interface DeleteBackupsRequest {
-  fileNames: string[]
-  [key: string]: unknown
-}
-
-export interface RenameBackupRequest {
+export interface BackupEntry {
+  createTime?: string
   fileName: string
-  newName: string
-  [key: string]: unknown
+  fileSize: number
+  time?: number
 }
 
-export function listBackups(): Promise<ApiEnvelope<BackupFile[]>> {
-  return apiGet('/api/game/backup')
+export interface BackupSnapshotSetting {
+  ID?: number
+  enable: number
+  interval: number
+  isCSave: number
+  maxSnapshots: number
+  name: string
 }
 
-export function createBackup(payload?: CreateBackupRequest): Promise<ApiEnvelope<null>> {
-  return apiPost('/api/game/backup', payload)
+export function getBackups(): Promise<ApiEnvelope<BackupEntry[]>> {
+  return apiGet<ApiEnvelope<BackupEntry[]>>('/api/game/backup')
 }
 
-export function deleteBackups(payload: DeleteBackupsRequest): Promise<ApiEnvelope<null>> {
-  return apiDelete('/api/game/backup', {
-    data: payload,
+export function createBackup(backupName = ''): Promise<ApiEnvelope<unknown>> {
+  return apiPost<ApiEnvelope<unknown>, { backupName: string }>('/api/game/backup', { backupName })
+}
+
+export function deleteBackups(fileNames: string[]): Promise<ApiEnvelope<unknown>> {
+  return apiDelete<ApiEnvelope<unknown>>('/api/game/backup', { data: { fileNames } })
+}
+
+export function renameBackup(fileName: string, newName: string): Promise<ApiEnvelope<unknown>> {
+  return apiPut<ApiEnvelope<unknown>, { fileName: string; newName: string }>('/api/game/backup', {
+    fileName,
+    newName,
   })
 }
 
-export function restoreBackup(backupName: string): Promise<ApiEnvelope<null>> {
-  return apiGet('/api/game/backup/restore', {
-    params: { backupName },
-  })
+export function restoreBackup(backupName: string): Promise<ApiEnvelope<unknown>> {
+  return apiGet<ApiEnvelope<unknown>>(
+    `/api/game/backup/restore?${new URLSearchParams({ backupName })}`,
+  )
 }
 
-export function renameBackup(payload: RenameBackupRequest): Promise<ApiEnvelope<null>> {
-  return apiPut('/api/game/backup', payload)
+export function getBackupDownloadUrl(fileName: string): string {
+  return `/api/game/backup/download?${new URLSearchParams({ fileName })}`
 }
 
-export function uploadBackup(file: File): Promise<ApiEnvelope<null>> {
+export function uploadBackup(file: File): Promise<ApiEnvelope<unknown>> {
   const formData = new FormData()
   formData.append('file', file)
-
-  return apiPost('/api/game/backup/upload', formData)
+  return apiPost<ApiEnvelope<unknown>, FormData>('/api/game/backup/upload', formData)
 }
 
-export async function downloadBackup(fileName: string): Promise<Blob> {
-  const response = await http.get<Blob>('/api/game/backup/download', {
-    params: { fileName },
-    responseType: 'blob',
-  })
-  return response.data
+export function getSnapshotSetting(): Promise<ApiEnvelope<BackupSnapshotSetting>> {
+  return apiGet<ApiEnvelope<BackupSnapshotSetting>>('/api/game/backup/snapshot/setting')
+}
+
+export function saveSnapshotSetting(
+  setting: BackupSnapshotSetting,
+): Promise<ApiEnvelope<BackupSnapshotSetting>> {
+  return apiPost<ApiEnvelope<BackupSnapshotSetting>, BackupSnapshotSetting>(
+    '/api/game/backup/snapshot/setting',
+    setting,
+  )
 }

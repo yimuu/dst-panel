@@ -1,23 +1,28 @@
 import { apiDelete, apiGet, apiPost, apiPut } from '@/shared/api/http'
 import type { ApiEnvelope } from '@/shared/api/types'
-import type { LevelSummary } from '@/shared/types/domain'
 
-export type LevelPayload = Partial<LevelSummary> & Record<string, unknown>
-
-export function listLevels(): Promise<ApiEnvelope<LevelSummary[]>> {
-  return apiGet('/api/cluster/level')
+export interface WorldLevel {
+  levelName: string
+  uuid: string
+  serverini: string
+  leveldataoverride: string
+  modoverrides: string
 }
 
-export function createLevel(payload: LevelPayload): Promise<ApiEnvelope<LevelSummary>> {
-  return apiPost('/api/cluster/level', payload)
+export function getLevels(): Promise<ApiEnvelope<WorldLevel[]>> {
+  return apiGet<ApiEnvelope<WorldLevel[]>>('/api/cluster/level')
 }
 
-export function saveLevels(levels: LevelSummary[]): Promise<ApiEnvelope<null>> {
-  return apiPut('/api/cluster/level', { levels })
+export function saveLevels(levels: WorldLevel[]): Promise<ApiEnvelope<unknown>> {
+  return apiPut<ApiEnvelope<unknown>, { levels: WorldLevel[] }>('/api/cluster/level', { levels })
 }
 
-export function deleteLevel(levelName: string): Promise<ApiEnvelope<null>> {
-  return apiDelete('/api/cluster/level', {
-    params: { levelName },
-  })
+export function createLevel(level: WorldLevel): Promise<ApiEnvelope<WorldLevel>> {
+  return apiPost<ApiEnvelope<WorldLevel>, WorldLevel>('/api/cluster/level', level)
+}
+
+export function deleteLevel(levelName: string): Promise<ApiEnvelope<unknown>> {
+  return apiDelete<ApiEnvelope<unknown>>(
+    `/api/cluster/level?${new URLSearchParams({ levelName }).toString()}`,
+  )
 }

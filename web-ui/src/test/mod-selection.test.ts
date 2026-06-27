@@ -1,15 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
-import { formatWorkshopId, toggleModId } from '@/features/mods/mod-selection'
+import { toggleSelectedMod } from '@/features/mods/mod-selection'
 
-describe('mod selection', () => {
-  it('normalizes workshop ids', () => {
-    expect(formatWorkshopId(' workshop-123456 ')).toBe('123456')
-    expect(formatWorkshopId('123456')).toBe('123456')
+describe('world mod selection', () => {
+  it('adds and removes selected mod ids', () => {
+    expect(toggleSelectedMod(['378160973'], '123')).toEqual(['378160973', '123'])
+    expect(toggleSelectedMod(['378160973', '123'], '123')).toEqual(['378160973'])
   })
 
-  it('toggles mod ids without duplicates', () => {
-    expect(toggleModId(['1', '2'], '2')).toEqual(['1'])
-    expect(toggleModId(['1'], '2')).toEqual(['1', '2'])
+  it('ignores blank mod ids', () => {
+    expect(toggleSelectedMod(['378160973'], '  ')).toEqual(['378160973'])
   })
 })

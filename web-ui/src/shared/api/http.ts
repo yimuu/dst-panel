@@ -41,37 +41,31 @@ export function normalizeApiError(error: unknown): ApiError {
   }
 }
 
-export async function apiGet<T, R = ApiEnvelope<T>>(
-  url: string,
-  config?: AxiosRequestConfig,
-): Promise<R> {
-  const response = await api.get<R>(url, config)
+export async function apiGet<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
+  const response = await api.get<T>(url, config)
   return response.data
 }
 
-export async function apiPost<T, D = unknown>(
+export async function apiPost<T, P = unknown>(
   url: string,
-  data?: D,
+  payload?: P,
   config?: AxiosRequestConfig,
-): Promise<ApiEnvelope<T>> {
-  const response = await api.post<ApiEnvelope<T>>(url, data, config)
+): Promise<T> {
+  const response = await api.post<T>(url, payload, config)
   return response.data
 }
 
-export async function apiPut<T, D = unknown>(
+export async function apiPut<T, P = unknown>(
   url: string,
-  data?: D,
+  payload?: P,
   config?: AxiosRequestConfig,
-): Promise<ApiEnvelope<T>> {
-  const response = await api.put<ApiEnvelope<T>>(url, data, config)
+): Promise<T> {
+  const response = await api.put<T>(url, payload, config)
   return response.data
 }
 
-export async function apiDelete<T>(
-  url: string,
-  config?: AxiosRequestConfig,
-): Promise<ApiEnvelope<T>> {
-  const response = await api.delete<ApiEnvelope<T>>(url, config)
+export async function apiDelete<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
+  const response = await api.delete<T>(url, config)
   return response.data
 }
 

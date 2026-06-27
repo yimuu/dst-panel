@@ -1,69 +1,31 @@
 import { describe, expect, it } from 'vitest'
 
-import { adminMenuItems } from '@/layouts/menu'
+import { adminMenuItems, flattenAdminMenuItems } from '@/layouts/menu'
 import { routes } from '@/shared/config/routes'
 
 describe('admin menu', () => {
-  it('contains the core admin route paths', () => {
-    const paths = JSON.stringify(adminMenuItems)
+  it('contains official preview route groups', () => {
+    const paths = flattenAdminMenuItems(adminMenuItems).map((item) => item.path)
 
-    expect(paths).toContain('/panel')
+    expect(paths).toContain(routes.dashboard)
+    expect(paths).toContain(routes.panel)
     expect(paths).toContain(routes.clusterIni)
-    expect(paths).toContain(routes.adminlist)
-    expect(paths).toContain(routes.whitelist)
-    expect(paths).toContain(routes.blacklist)
-    expect(paths).toContain('/levels/levels')
-    expect(paths).toContain(routes.selectorMod)
-    expect(paths).toContain(routes.preinstall)
-    expect(paths).toContain(routes.genMap)
-    expect(paths).toContain('/mod')
-    expect(paths).toContain('/backup')
-    expect(paths).toContain('/setting')
+    expect(paths).toContain(routes.levels)
+    expect(paths).toContain(routes.mod)
+    expect(paths).toContain(routes.backup)
   })
 
-  it('shows the completed room submenu entries', () => {
-    const roomMenu = adminMenuItems.find((item) => item.label === '房间')
+  it('uses Chinese visible labels', () => {
+    const labels = flattenAdminMenuItems(adminMenuItems).map((item) => item.name)
 
-    expect(roomMenu?.children?.map((item) => item.path)).toEqual([
-      routes.clusterIni,
-      routes.adminlist,
-      routes.whitelist,
-      routes.blacklist,
-    ])
-    expect(roomMenu?.children?.map((item) => item.label)).toEqual([
-      '集群设置',
-      '管理员列表',
-      '白名单',
-      '黑名单',
-    ])
+    expect(labels).toContain('统计面板')
+    expect(labels).toContain('源码仓库')
+    expect(labels).not.toContain('Dashboard')
+    expect(labels).not.toContain('Github')
   })
 
-  it('shows the completed world submenu entries', () => {
-    const worldMenu = adminMenuItems.find((item) => item.label === '世界')
-
-    expect(worldMenu?.children?.map((item) => item.path)).toEqual([
-      routes.levels,
-      routes.selectorMod,
-      routes.preinstall,
-      routes.genMap,
-    ])
-    expect(worldMenu?.children?.map((item) => item.label)).toEqual([
-      '世界',
-      '选择模组',
-      '预设模板',
-      '地图预览',
-    ])
-  })
-
-  it('has no hidden routes left from the rebuilt room and world workflows', () => {
-    const paths = JSON.stringify(adminMenuItems)
-
-    expect(paths).toContain(routes.clusterIni)
-    expect(paths).toContain(routes.adminlist)
-    expect(paths).toContain(routes.whitelist)
-    expect(paths).toContain(routes.blacklist)
-    expect(paths).toContain(routes.selectorMod)
-    expect(paths).toContain(routes.preinstall)
-    expect(paths).toContain(routes.genMap)
+  it('keeps grouped menu parents on real route paths', () => {
+    expect(adminMenuItems.find((item) => item.name === '房间设置')?.path).toBe(routes.clusterIni)
+    expect(adminMenuItems.find((item) => item.name === '世界设置')?.path).toBe(routes.levels)
   })
 })

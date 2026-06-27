@@ -1,8 +1,8 @@
-export interface ApiEnvelope<T> {
+export interface ApiEnvelope<T = unknown> {
   code?: number
+  data?: T
   msg?: string
   message?: string
-  data: T
   [key: string]: unknown
 }
 

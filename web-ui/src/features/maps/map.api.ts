@@ -1,29 +1,25 @@
 import { apiGet } from '@/shared/api/http'
 import type { ApiEnvelope } from '@/shared/api/types'
+import type { WorldSettingsDefinition } from '@/features/worlds/world-settings-model'
 
-export function generateMap(levelName: string): Promise<ApiEnvelope<null>> {
-  return apiGet('/api/dst/map/gen', {
-    params: { levelName },
-  })
+export function getWorldSettingsDefinition(): Promise<WorldSettingsDefinition> {
+  return apiGet<WorldSettingsDefinition>('/api/dst-static/dst_world_setting.json')
 }
 
-export function getMapImageUrl(levelName: string, cacheKey = ''): string {
-  const params = new URLSearchParams({ levelName })
-  if (cacheKey) {
-    params.set('t', cacheKey)
-  }
-
-  return `/api/dst/map/image?${params.toString()}`
+export function getWorldgenCustomizationImageUrl(): string {
+  return '/api/dst-static/worldgen_customization.webp'
 }
 
-export function checkWalrusHutPlains(levelName: string): Promise<ApiEnvelope<boolean>> {
-  return apiGet('/api/dst/map/has/walrusHut/plains', {
-    params: { levelName },
-  })
+export function getWorldSettingsCustomizationImageUrl(): string {
+  return '/api/dst-static/worldsettings_customization.webp'
 }
 
-export function getSessionFile(levelName: string): Promise<ApiEnvelope<string>> {
-  return apiGet('/api/dst/map/session/file', {
-    params: { levelName },
-  })
+export function getMapImageUrl(levelName: string): string {
+  return `/api/dst/map/image?${new URLSearchParams({ levelName }).toString()}`
+}
+
+export function generateMap(levelName: string): Promise<ApiEnvelope<unknown>> {
+  return apiGet<ApiEnvelope<unknown>>(
+    `/api/dst/map/gen?${new URLSearchParams({ levelName }).toString()}`,
+  )
 }

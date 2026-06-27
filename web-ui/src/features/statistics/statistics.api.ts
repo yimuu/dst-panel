@@ -1,73 +1,103 @@
 import { apiGet } from '@/shared/api/http'
 import type { ApiEnvelope } from '@/shared/api/types'
 
-export interface ActiveUserStatistics {
-  x?: number[]
-  y1?: number[]
-  y2?: number[]
-  [key: string]: unknown
-}
-
-export interface TopActiveStatistics {
-  id?: number
-  count?: number
-  name?: string
-  kuId?: string
-  steamId?: string
-  role?: string
-  actionDesc?: string
-  createdAt?: string
-  [key: string]: unknown
-}
-
-export interface RoleRateStatistics {
-  role?: string
-  count?: number
-  [key: string]: unknown
-}
-
-export interface DateRangeParams {
+export interface DateRangeQuery {
   startDate?: string
   endDate?: string
 }
 
-export interface ActiveUserParams extends DateRangeParams {
+export interface ActiveUserQuery extends DateRangeQuery {
   unit?: string
 }
 
-export interface TopStatisticsParams extends DateRangeParams {
-  N?: number | string
+export interface TopStatisticsQuery extends DateRangeQuery {
+  limit?: number | string
 }
 
-export interface RegenerateStatistics {
-  id?: number
-  day?: string
-  count?: number
-  [key: string]: unknown
+export interface LimitQuery {
+  limit?: number | string
 }
 
-export interface RegenerateStatisticsParams {
-  N?: number | string
+export interface ActiveUserAxis {
+  x: number[] | null
+  y1: number[] | null
+  y2: number[] | null
 }
 
-export function getActiveUsers(
-  params?: ActiveUserParams,
-): Promise<ApiEnvelope<ActiveUserStatistics>> {
-  return apiGet('/api/statistics/active/user', { params })
+export interface RoleRateStatistics {
+  role: string
+  count: number
 }
 
-export function getTopActive(
-  params?: TopStatisticsParams,
-): Promise<ApiEnvelope<TopActiveStatistics[]>> {
-  return apiGet('/api/statistics/top/active', { params })
+export interface TopStatistics {
+  id: number
+  count: number
+  name: string
+  kuId: string
+  steamId: string
+  role: string
+  actionDesc: string
+  createdAt: string
 }
 
-export function getRoleRate(params?: DateRangeParams): Promise<ApiEnvelope<RoleRateStatistics[]>> {
-  return apiGet('/api/statistics/rate/role', { params })
+export interface RegenerateRecord {
+  ID: number
+  CreatedAt: string | null
+  UpdatedAt: string | null
+  DeletedAt: string | null
+  clusterName: string
+}
+
+export function getActiveUsers(query: ActiveUserQuery = {}): Promise<ApiEnvelope<ActiveUserAxis>> {
+  return apiGet<ApiEnvelope<ActiveUserAxis>>(
+    withQuery('/api/statistics/active/user', {
+      unit: query.unit,
+      startDate: query.startDate,
+      endDate: query.endDate,
+    }),
+  )
+}
+
+export function getRoleRates(
+  query: DateRangeQuery = {},
+): Promise<ApiEnvelope<RoleRateStatistics[]>> {
+  return apiGet<ApiEnvelope<RoleRateStatistics[]>>(
+    withQuery('/api/statistics/rate/role', {
+      startDate: query.startDate,
+      endDate: query.endDate,
+    }),
+  )
+}
+
+export function getTopActiveUsers(
+  query: TopStatisticsQuery = {},
+): Promise<ApiEnvelope<TopStatistics[]>> {
+  return apiGet<ApiEnvelope<TopStatistics[]>>(
+    withQuery('/api/statistics/top/active', {
+      N: query.limit,
+      startDate: query.startDate,
+      endDate: query.endDate,
+    }),
+  )
 }
 
 export function regenerateStatistics(
-  params?: RegenerateStatisticsParams,
-): Promise<ApiEnvelope<RegenerateStatistics[]>> {
-  return apiGet('/api/statistics/regenerate', { params })
+  query: LimitQuery = {},
+): Promise<ApiEnvelope<RegenerateRecord[]>> {
+  return apiGet<ApiEnvelope<RegenerateRecord[]>>(
+    withQuery('/api/statistics/regenerate', { N: query.limit }),
+  )
+}
+
+function withQuery(path: string, params: Record<string, string | number | undefined>): string {
+  const search = new URLSearchParams()
+
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined) {
+      search.set(key, String(value))
+    }
+  }
+
+  const query = search.toString()
+  return query ? `${path}?${query}` : path
 }

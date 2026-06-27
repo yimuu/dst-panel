@@ -1,9 +1,8 @@
-export function normalizeMapLevelName(levelName?: string): string {
-  const trimmed = levelName?.trim()
+import { apiGet } from '@/shared/api/http'
+import type { ApiEnvelope } from '@/shared/api/types'
 
-  return trimmed || 'Master'
-}
-
-export function createMapCacheKey(timestamp = Date.now()): string {
-  return String(timestamp)
+export function applyPreinstall(name: string): Promise<ApiEnvelope<unknown>> {
+  return apiGet<ApiEnvelope<unknown>>(
+    `/api/game/preinstall?${new URLSearchParams({ name }).toString()}`,
+  )
 }

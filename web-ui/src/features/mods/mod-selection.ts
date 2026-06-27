@@ -1,9 +1,10 @@
-export function formatWorkshopId(value: string): string {
-  return value.trim().replace(/^workshop-/i, '')
-}
+export function toggleSelectedMod(selectedIds: string[], modId: string): string[] {
+  const normalizedModId = modId.trim()
+  if (!normalizedModId) {
+    return selectedIds
+  }
 
-export function toggleModId(selectedIds: string[], modId: string): string[] {
-  return selectedIds.includes(modId)
-    ? selectedIds.filter((id) => id !== modId)
-    : [...selectedIds, modId]
+  return selectedIds.includes(normalizedModId)
+    ? selectedIds.filter((selectedId) => selectedId !== normalizedModId)
+    : [...selectedIds, normalizedModId]
 }
