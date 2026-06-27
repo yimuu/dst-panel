@@ -11,7 +11,7 @@ export default function AdminLayout() {
 
   return (
     <ProLayout
-      title="Dst-admin-go"
+      title="饥荒管理面板"
       logo={false}
       layout="mix"
       fixedHeader

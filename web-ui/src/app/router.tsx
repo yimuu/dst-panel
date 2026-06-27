@@ -19,14 +19,15 @@ import SettingsPage from '@/pages/SettingsPage'
 import UserProfilePage from '@/pages/UserProfilePage'
 import WorldLevelsPage from '@/pages/WorldLevelsPage'
 import WorldModSelectionPage from '@/pages/WorldModSelectionPage'
-import { getAuthRedirect } from '@/features/auth/auth-state'
+import { getAuthRedirect, readAuthRouteState } from '@/features/auth/auth-state'
 import { routes } from '@/shared/config/routes'
 
 function RouteGuard({ publicRoute = false }: { publicRoute?: boolean }) {
   const location = useLocation()
+  const { firstRun, authenticated } = readAuthRouteState()
   const redirect = getAuthRedirect({
-    firstRun: false,
-    authenticated: true,
+    firstRun,
+    authenticated,
     publicRoute,
     path: location.pathname,
   })

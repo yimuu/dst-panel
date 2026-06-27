@@ -1,10 +1,22 @@
 import { ProCard } from '@ant-design/pro-components'
 import { Button, Form, Input } from 'antd'
+import { useNavigate } from 'react-router'
+
+import { markAuthenticated } from '@/features/auth/auth-state'
+import { routes } from '@/shared/config/routes'
 
 export default function LoginPage() {
+  const navigate = useNavigate()
+
   return (
     <ProCard className="auth-card" title="登录" bordered={false}>
-      <Form layout="vertical">
+      <Form
+        layout="vertical"
+        onFinish={() => {
+          markAuthenticated()
+          navigate(routes.panel, { replace: true })
+        }}
+      >
         <Form.Item
           label="用户名"
           name="username"

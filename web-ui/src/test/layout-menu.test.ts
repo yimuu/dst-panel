@@ -14,4 +14,13 @@ describe('admin menu', () => {
     expect(paths).toContain(routes.mod)
     expect(paths).toContain(routes.backup)
   })
+
+  it('uses Chinese visible labels', () => {
+    const labels = flattenAdminMenuItems(adminMenuItems).map((item) => item.name)
+
+    expect(labels).toContain('统计面板')
+    expect(labels).toContain('源码仓库')
+    expect(labels).not.toContain('Dashboard')
+    expect(labels).not.toContain('Github')
+  })
 })

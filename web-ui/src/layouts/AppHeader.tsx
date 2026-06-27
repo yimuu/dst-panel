@@ -15,7 +15,7 @@ export function AppHeader() {
       <Tooltip title="帮助">
         <Button type="text" shape="circle" icon={<QuestionCircleOutlined />} />
       </Tooltip>
-      <Tooltip title="Github">
+      <Tooltip title="源码仓库">
         <Button
           type="text"
           shape="circle"
@@ -27,7 +27,7 @@ export function AppHeader() {
       </Tooltip>
       <Space size={8}>
         <Avatar size={28} icon={<UserOutlined />} />
-        <Typography.Text strong>admin</Typography.Text>
+        <Typography.Text strong>管理员</Typography.Text>
       </Space>
     </Space>
   )

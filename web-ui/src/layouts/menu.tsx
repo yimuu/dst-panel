@@ -21,10 +21,10 @@ export interface AdminMenuItem extends MenuDataItem {
 }
 
 export const adminMenuItems: AdminMenuItem[] = [
-  { path: routes.dashboard, name: 'Dashboard', icon: <DashboardOutlined /> },
+  { path: routes.dashboard, name: '统计面板', icon: <DashboardOutlined /> },
   { path: routes.panel, name: '面板操作', icon: <CloudServerOutlined /> },
   {
-    path: routes.clusterIni,
+    path: '/home',
     name: '房间设置',
     icon: <HomeOutlined />,
     children: [
@@ -35,7 +35,7 @@ export const adminMenuItems: AdminMenuItem[] = [
     ],
   },
   {
-    path: routes.levels,
+    path: '/levels',
     name: '世界设置',
     icon: <ToolOutlined />,
     children: [
@@ -53,7 +53,7 @@ export const adminMenuItems: AdminMenuItem[] = [
   { path: routes.help, name: '帮助文档', icon: <ReadOutlined /> },
   {
     path: 'https://github.com/carrot-hu23/dst-admin-go',
-    name: 'Github',
+    name: '源码仓库',
     icon: <GithubOutlined />,
   },
 ]
