@@ -382,6 +382,178 @@ button {
   width: min(420px, 100%);
 }
 
+.world-levels-card,
+.selector-mod-card,
+.preinstall-card,
+.map-preview-card {
+  min-width: 0;
+}
+
+.world-levels-alert {
+  margin-bottom: 14px;
+}
+
+.world-setting-groups {
+  max-height: 520px;
+  padding-right: 8px;
+  overflow: auto;
+}
+
+.world-setting-section {
+  padding: 8px 0 20px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.world-setting-section h3 {
+  margin: 0 0 14px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.world-setting-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px 28px;
+}
+
+.world-setting-control {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
+}
+
+.world-setting-icon {
+  width: 54px;
+  height: 54px;
+  border: 2px solid #1f1f1f;
+  background-repeat: no-repeat;
+  image-rendering: auto;
+}
+
+.world-setting-field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.world-setting-field > span {
+  overflow: hidden;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.world-setting-field .ant-select {
+  width: min(160px, 100%);
+}
+
+.world-action-bar {
+  padding-top: 18px;
+}
+
+.world-port-grid {
+  display: grid;
+  grid-template-columns: 80px minmax(0, 1fr);
+  gap: 14px;
+  max-width: 520px;
+}
+
+.selector-toolbar {
+  margin: 18px 0 24px;
+}
+
+.selector-toolbar .ant-input {
+  width: 220px;
+}
+
+.selector-config-form {
+  display: grid;
+  gap: 22px;
+}
+
+.selector-config-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 12px;
+  align-items: center;
+  padding-bottom: 22px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.selector-config-row .ant-form-item {
+  margin: 0;
+}
+
+.selector-add-field {
+  width: 100%;
+  border-style: dashed;
+}
+
+.selector-sync-panel {
+  padding: 20px 0;
+}
+
+.preinstall-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.preinstall-template {
+  display: grid;
+  grid-template-rows: 150px auto;
+  overflow: hidden;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.preinstall-cover {
+  width: 100%;
+  height: 150px;
+  background-color: #f5f5f5;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size:
+    cover,
+    76px 76px;
+}
+
+.preinstall-body {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+}
+
+.preinstall-body h3,
+.preinstall-body p {
+  margin: 0;
+}
+
+.preinstall-body p {
+  min-height: 42px;
+  color: #666;
+}
+
+.map-preview-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 520px;
+  overflow: auto;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  background: #f7f8fa;
+}
+
+.map-preview-panel img {
+  max-width: 100%;
+  max-height: 720px;
+  object-fit: contain;
+}
+
 @media (max-width: 960px) {
   .dashboard-summary-grid,
   .dashboard-chart-grid,
