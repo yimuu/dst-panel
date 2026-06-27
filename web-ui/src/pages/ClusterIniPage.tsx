@@ -9,42 +9,12 @@ import {
   Space,
   Switch,
   Tooltip,
-  Typography,
 } from 'antd'
 import { QuestionCircleOutlined } from '@ant-design/icons'
+import { useEffect, useState } from 'react'
 
-import { saveClusterIni, type ClusterIniEnvelope } from '@/features/room/room.api'
-
-const defaultRoomValues: ClusterIniEnvelope = {
-  cluster: {
-    game_mode: 'survival',
-    max_players: 8,
-    pvp: false,
-    pause_when_nobody: true,
-    vote_enabled: true,
-    vote_kick_enabled: true,
-    lan_only_cluster: false,
-    cluster_intention: 'cooperative',
-    cluster_description: '123',
-    cluster_password: '',
-    cluster_name: 'huhuhu-test',
-    offline_cluster: false,
-    cluster_language: 'zh',
-    whitelist_slots: 0,
-    tick_rate: 15,
-    console_enabled: true,
-    max_snapshots: 6,
-    shard_enabled: true,
-    bind_ip: '0.0.0.0',
-    master_ip: '127.0.0.1',
-    master_port: 10888,
-    cluster_key: '',
-    steam_group_id: '',
-    steam_group_only: false,
-    steam_group_admins: false,
-  },
-  token: '................................................',
-}
+import { getClusterIni, saveClusterIni, type ClusterIniEnvelope } from '@/features/room/room.api'
+import { assertApiSuccess, getErrorMessage } from '@/shared/api/envelope'
 
 const gameModes = [
   { label: '无尽', value: 'endless' },
@@ -61,6 +31,38 @@ const gameModes = [
 export default function ClusterIniPage() {
   const [form] = Form.useForm<ClusterIniEnvelope>()
   const { message } = AntApp.useApp()
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [loadedValues, setLoadedValues] = useState<ClusterIniEnvelope | null>(null)
+
+  useEffect(() => {
+    let ignore = false
+
+    async function loadClusterIni() {
+      try {
+        setLoading(true)
+        const values = assertApiSuccess(await getClusterIni())
+        if (!ignore) {
+          setLoadedValues(values)
+          form.setFieldsValue(values)
+        }
+      } catch (error) {
+        if (!ignore) {
+          message.error(getErrorMessage(error, '加载房间设置失败'))
+        }
+      } finally {
+        if (!ignore) {
+          setLoading(false)
+        }
+      }
+    }
+
+    void loadClusterIni()
+
+    return () => {
+      ignore = true
+    }
+  }, [form, message])
 
   return (
     <div className="room-settings-page">
@@ -79,13 +81,33 @@ export default function ClusterIniPage() {
         <Form
           className="room-settings-form"
           form={form}
-          initialValues={defaultRoomValues}
+          disabled={loading}
           labelCol={{ flex: '150px' }}
           labelAlign="right"
           colon={false}
           onFinish={async (values) => {
-            await saveClusterIni(values)
-            message.success('保存成功')
+            if (!loadedValues) {
+              message.error('请先加载房间设置')
+              return
+            }
+            const payload: ClusterIniEnvelope = {
+              ...loadedValues,
+              ...values,
+              cluster: {
+                ...loadedValues.cluster,
+                ...values.cluster,
+              },
+            }
+            try {
+              setSaving(true)
+              assertApiSuccess(await saveClusterIni(payload))
+              setLoadedValues(payload)
+              message.success('保存成功')
+            } catch (error) {
+              message.error(getErrorMessage(error, '保存失败'))
+            } finally {
+              setSaving(false)
+            }
           }}
         >
           <Form.Item
@@ -95,8 +117,8 @@ export default function ClusterIniPage() {
           >
             <Input allowClear />
           </Form.Item>
-          <Form.Item label="-" className="room-emoji-row">
-            <Typography.Link>emoji</Typography.Link>
+          <Form.Item label="表情符号" className="room-emoji-row">
+            <span className="room-muted-value">默认</span>
           </Form.Item>
           <Form.Item label="描述" name={['cluster', 'cluster_description']}>
             <Input.TextArea rows={4} />
@@ -149,7 +171,7 @@ export default function ClusterIniPage() {
             <InputNumber min={0} max={64} />
           </Form.Item>
           <div className="room-save-bar">
-            <Button type="primary" htmlType="submit">
+            <Button type="primary" htmlType="submit" loading={saving} disabled={!loadedValues}>
               保存
             </Button>
           </div>

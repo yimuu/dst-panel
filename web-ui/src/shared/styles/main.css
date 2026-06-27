@@ -359,6 +359,10 @@ button {
   margin-top: -8px;
 }
 
+.room-muted-value {
+  color: #8c8c8c;
+}
+
 .room-save-bar {
   position: sticky;
   bottom: -24px;
