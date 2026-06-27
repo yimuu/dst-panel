@@ -1,3 +1,10 @@
+import { AppProviders } from './providers'
+import { AppRouter } from './router'
+
 export default function App() {
-  return <div>饥荒联机版管理面板</div>
+  return (
+    <AppProviders>
+      <AppRouter />
+    </AppProviders>
+  )
 }
