@@ -324,6 +324,60 @@ button {
   margin-top: 16px;
 }
 
+.room-settings-page,
+.player-list-page {
+  min-width: 0;
+}
+
+.room-settings-card .ant-pro-card-body {
+  padding: 24px 24px 0;
+}
+
+.room-settings-form {
+  max-width: 1280px;
+}
+
+.room-settings-form .ant-form-item {
+  margin-bottom: 28px;
+}
+
+.room-settings-form .ant-input-number {
+  width: 112px;
+}
+
+.room-settings-form .ant-radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 18px;
+}
+
+.room-settings-form .ant-radio-wrapper {
+  margin-inline-end: 0;
+}
+
+.room-emoji-row {
+  margin-top: -8px;
+}
+
+.room-save-bar {
+  position: sticky;
+  bottom: -24px;
+  z-index: 2;
+  display: flex;
+  justify-content: flex-end;
+  padding: 16px 0;
+  background: linear-gradient(180deg, rgb(255 255 255 / 0%), #fff 28%);
+}
+
+.player-list-toolbar {
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.player-list-toolbar .ant-input-search {
+  width: min(420px, 100%);
+}
+
 @media (max-width: 960px) {
   .dashboard-summary-grid,
   .dashboard-chart-grid,
@@ -336,6 +390,19 @@ button {
   .dashboard-toolbar .ant-pro-card-body {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .room-settings-card .ant-pro-card-body {
+    padding-inline: 16px;
+  }
+
+  .room-settings-form .ant-form-item {
+    display: block;
+  }
+
+  .room-settings-form .ant-form-item-label {
+    padding-bottom: 8px;
+    text-align: left;
   }
 }
 
