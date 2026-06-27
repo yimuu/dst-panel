@@ -1,8 +1,9 @@
 export interface ApiEnvelope<T> {
-  code: number
+  code?: number
   msg?: string
   message?: string
   data: T
+  [key: string]: unknown
 }
 
 export interface ApiError {

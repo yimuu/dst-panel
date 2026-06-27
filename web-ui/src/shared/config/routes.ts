@@ -19,3 +19,5 @@ export const routes = {
   help: '/help',
   userProfile: '/userProfile',
 } as const
+
+export type AppRoutePath = (typeof routes)[keyof typeof routes]

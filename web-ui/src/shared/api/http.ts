@@ -2,10 +2,21 @@ import axios, { type AxiosRequestConfig } from 'axios'
 
 import type { ApiEnvelope, ApiError } from './types'
 
-export const http = axios.create({
+export const api = axios.create({
   baseURL: '/',
   withCredentials: true,
 })
+
+export const http = api
+
+export function setClusterHeader(cluster: string | undefined): void {
+  if (cluster) {
+    api.defaults.headers.common.Cluster = cluster
+    return
+  }
+
+  delete api.defaults.headers.common.Cluster
+}
 
 export function isApiSuccess(envelope: Pick<ApiEnvelope<unknown>, 'code'>): boolean {
   return envelope.code === 0 || envelope.code === 200
@@ -30,8 +41,11 @@ export function normalizeApiError(error: unknown): ApiError {
   }
 }
 
-export async function apiGet<T>(url: string, config?: AxiosRequestConfig): Promise<ApiEnvelope<T>> {
-  const response = await http.get<ApiEnvelope<T>>(url, config)
+export async function apiGet<T, R = ApiEnvelope<T>>(
+  url: string,
+  config?: AxiosRequestConfig,
+): Promise<R> {
+  const response = await api.get<R>(url, config)
   return response.data
 }
 
@@ -40,7 +54,7 @@ export async function apiPost<T, D = unknown>(
   data?: D,
   config?: AxiosRequestConfig,
 ): Promise<ApiEnvelope<T>> {
-  const response = await http.post<ApiEnvelope<T>>(url, data, config)
+  const response = await api.post<ApiEnvelope<T>>(url, data, config)
   return response.data
 }
 
@@ -49,7 +63,7 @@ export async function apiPut<T, D = unknown>(
   data?: D,
   config?: AxiosRequestConfig,
 ): Promise<ApiEnvelope<T>> {
-  const response = await http.put<ApiEnvelope<T>>(url, data, config)
+  const response = await api.put<ApiEnvelope<T>>(url, data, config)
   return response.data
 }
 
@@ -57,7 +71,7 @@ export async function apiDelete<T>(
   url: string,
   config?: AxiosRequestConfig,
 ): Promise<ApiEnvelope<T>> {
-  const response = await http.delete<ApiEnvelope<T>>(url, config)
+  const response = await api.delete<ApiEnvelope<T>>(url, config)
   return response.data
 }
 
