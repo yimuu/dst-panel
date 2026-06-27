@@ -12,7 +12,7 @@ export default function LoginPage() {
   const { message } = AntApp.useApp()
 
   return (
-    <ProCard className="auth-card" title="登录" bordered={false}>
+    <ProCard className="auth-card auth-form-card" title="登录" bordered={false}>
       <Form
         layout="vertical"
         onFinish={async (values: LoginPayload) => {

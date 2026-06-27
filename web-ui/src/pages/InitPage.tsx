@@ -16,7 +16,7 @@ export default function InitPage() {
   const { message } = AntApp.useApp()
 
   return (
-    <ProCard className="auth-card" title="初始化管理员" bordered={false}>
+    <ProCard className="auth-card auth-form-card" title="初始化管理员" bordered={false}>
       <Form
         layout="vertical"
         onFinish={async (values: InitFormValues) => {

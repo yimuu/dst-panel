@@ -761,13 +761,88 @@ button {
   max-width: 860px;
 }
 
+.data-page-card,
+.settings-page-card,
+.help-page-card,
+.profile-page-card {
+  min-width: 0;
+}
+
+.data-toolbar {
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.data-toolbar .ant-input {
+  width: 260px;
+}
+
+.settings-form {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 28px;
+  max-width: 1320px;
+}
+
+.settings-form section {
+  min-width: 0;
+}
+
+.settings-form h3 {
+  margin: 0 0 18px;
+  font-size: 16px;
+}
+
+.settings-save-bar {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 10px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.help-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.help-doc-card {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 14px;
+  padding: 18px;
+  background: #fff;
+  border: 1px solid #edf0f5;
+  border-radius: 8px;
+}
+
+.help-doc-card h3,
+.profile-summary h4 {
+  margin-top: 0;
+}
+
+.help-doc-card .anticon {
+  color: #4f46e5;
+  font-size: 24px;
+}
+
+.profile-summary {
+  margin-bottom: 24px;
+}
+
+.profile-form {
+  max-width: 560px;
+}
+
 @media (max-width: 960px) {
   .dashboard-summary-grid,
   .dashboard-chart-grid,
   .dashboard-bottom-grid,
   .panel-content-grid,
   .server-info-grid,
-  .mod-settings-layout {
+  .mod-settings-layout,
+  .settings-form {
     grid-template-columns: 1fr;
   }
 

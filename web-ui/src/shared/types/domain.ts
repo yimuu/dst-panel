@@ -4,6 +4,7 @@ export interface CurrentUser {
   username?: string
   name?: string
   displayName?: string
+  photoURL?: string
   role?: string
   createdAt?: string
   created_at?: string
