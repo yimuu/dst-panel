@@ -1,10 +1,12 @@
 import { apiDelete, apiGet, apiPost, apiPut } from '@/shared/api/http'
 import type { ApiEnvelope } from '@/shared/api/types'
+import type { ServerIniPayload } from '@/shared/types/domain'
 
 export interface WorldLevel {
   levelName: string
+  is_master: boolean
   uuid: string
-  serverini: string
+  server_ini: ServerIniPayload
   leveldataoverride: string
   modoverrides: string
 }

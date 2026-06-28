@@ -68,6 +68,10 @@ function renderWithAntApp(ui: ReactElement) {
   )
 }
 
+async function confirmPopconfirm() {
+  fireEvent.click(await screen.findByRole('button', { name: /确\s*认/ }))
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
   apiMocks.getClusterIni.mockResolvedValue({
@@ -135,6 +139,7 @@ describe('player list page', () => {
     const row = screen.getByText('KU_EXISTING').closest('tr')
     expect(row).not.toBeNull()
     fireEvent.click(within(row as HTMLTableRowElement).getByRole('button', { name: /删除/ }))
+    await confirmPopconfirm()
     await waitFor(() => {
       expect(apiMocks.removePlayerListEntries).toHaveBeenCalledWith('adminlist', ['KU_EXISTING'])
     })
@@ -156,6 +161,7 @@ describe('player list page', () => {
     const row = screen.getByText('KU_EXISTING').closest('tr')
     expect(row).not.toBeNull()
     fireEvent.click(within(row as HTMLTableRowElement).getByRole('button', { name: /删除/ }))
+    await confirmPopconfirm()
     await waitFor(() => {
       expect(apiMocks.savePlayerList).toHaveBeenLastCalledWith('whitelist', ['KU_WHITE'])
     })

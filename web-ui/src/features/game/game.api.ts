@@ -1,5 +1,6 @@
 import { apiGet, apiPost } from '@/shared/api/http'
 import type { ApiEnvelope } from '@/shared/api/types'
+import type { GameConfig } from '@/shared/types/domain'
 
 export interface SystemInfo {
   host: HostInfo
@@ -63,6 +64,14 @@ export interface LevelStatusInfo {
   server_ini: unknown
 }
 
+export interface OnlinePlayer {
+  key: string
+  day: string
+  name: string
+  kuId: string
+  role: string
+}
+
 export interface GameCommandPayload {
   levelName: string
   command: string
@@ -88,8 +97,51 @@ export function sendGameCommand(payload: GameCommandPayload): Promise<ApiEnvelop
   return apiPost<ApiEnvelope<unknown>, GameCommandPayload>('/api/game/8level/command', payload)
 }
 
+export function getOnlinePlayers(levelName: string): Promise<ApiEnvelope<OnlinePlayer[]>> {
+  return apiGet<ApiEnvelope<OnlinePlayer[]>>(
+    `/api/game/8level/players?levelName=${encodeURIComponent(levelName)}`,
+  )
+}
+
+export function getAllOnlinePlayers(): Promise<ApiEnvelope<OnlinePlayer[]>> {
+  return apiGet<ApiEnvelope<OnlinePlayer[]>>('/api/game/8level/players/all')
+}
+
+export function getLevelServerLog(
+  levelName: string,
+  lines = 80,
+): Promise<ApiEnvelope<string[]>> {
+  const params = new URLSearchParams({ levelName, lines: String(lines) })
+  return apiGet<ApiEnvelope<string[]>>(`/api/game/level/server/log?${params.toString()}`)
+}
+
+export function getLevelLogDownloadUrl(levelName: string, fileName = 'server_log.txt'): string {
+  return `/api/game/level/server/download?${new URLSearchParams({
+    levelName,
+    fileName,
+  }).toString()}`
+}
+
+export function rollbackGame(dayNums: number): Promise<ApiEnvelope<unknown>> {
+  return apiGet<ApiEnvelope<unknown>>(
+    `/api/game/rollback?dayNums=${encodeURIComponent(String(dayNums))}`,
+  )
+}
+
+export function regenerateWorld(): Promise<ApiEnvelope<unknown>> {
+  return apiGet<ApiEnvelope<unknown>>('/api/game/regenerateworld')
+}
+
 export function getSystemInfo(): Promise<ApiEnvelope<SystemInfo>> {
   return apiGet<ApiEnvelope<SystemInfo>>('/api/game/system/info')
+}
+
+export function getGameConfig(): Promise<ApiEnvelope<GameConfig>> {
+  return apiGet<ApiEnvelope<GameConfig>>('/api/game/config')
+}
+
+export function saveGameConfig(config: Partial<GameConfig>): Promise<ApiEnvelope<unknown>> {
+  return apiPost<ApiEnvelope<unknown>, Partial<GameConfig>>('/api/game/config', config)
 }
 
 export function updateGame(): Promise<ApiEnvelope<unknown>> {

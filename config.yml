@@ -9,6 +9,8 @@ dataDir: "./data"
 dstCliPort: 8102
 #数据库
 database: dst-db
+# Steam Web API Key，沿用官方 Go 版内置 key，用于模组搜索和详情查询
+steamAPIKey: "73DF9F781D195DFD3D19DED1CB72EEE6"
 # DST 版本检查 URL
 dstVersionUrl: "https://api.dstserverlist.top/api/v2/Server/Version"
 # 自动更新模组信息

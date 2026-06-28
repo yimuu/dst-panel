@@ -6,7 +6,7 @@ COPY web-ui /app/web-ui
 RUN npm run build
 
 # 使用官方的 Ubuntu amd64 基础镜像，匹配 build_linux.sh 的默认 Rust target。
-FROM --platform=linux/amd64 ubuntu:20.04
+FROM --platform=linux/amd64 ubuntu:24.04
 
 LABEL org.opencontainers.image.title="dst-panel"
 LABEL org.opencontainers.image.description="Don't Starve Together server panel Rust migration."
@@ -17,11 +17,11 @@ RUN dpkg --add-architecture i386 && \
     apt-get update && \
     apt-get install -y \
     curl \
-    libcurl4-gnutls-dev:i386 \
-    lib32gcc1 \
+    libcurl3t64-gnutls \
+    libcurl3t64-gnutls:i386 \
+    lib32gcc-s1 \
     lib32stdc++6 \
-    libcurl4-gnutls-dev \
-    libgcc1 \
+    libgcc-s1 \
     libstdc++6 \
     wget \
     ca-certificates \

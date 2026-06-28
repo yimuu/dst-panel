@@ -1,7 +1,18 @@
 import type { AxiosRequestConfig, AxiosResponse } from 'axios'
 import { afterEach, describe, expect, expectTypeOf, it } from 'vitest'
 
-import { sendGameCommand, type GameCommandPayload, type SystemInfo } from '@/features/game/game.api'
+import {
+  getAllOnlinePlayers,
+  getLevelLogDownloadUrl,
+  getLevelServerLog,
+  getOnlinePlayers,
+  regenerateWorld,
+  rollbackGame,
+  sendGameCommand,
+  type GameCommandPayload,
+  type OnlinePlayer,
+  type SystemInfo,
+} from '@/features/game/game.api'
 import { api } from '@/shared/api/http'
 
 const originalAdapter = api.defaults.adapter
@@ -120,5 +131,36 @@ describe('game api contract', () => {
       panelCpuUsage: number
     }>()
     expect(sample.host.kernelArch).toBe('x86_64')
+  })
+
+  it('uses the backend panel helper routes for logs, players, rollback, and reset', async () => {
+    expectTypeOf<OnlinePlayer>().toEqualTypeOf<{
+      key: string
+      day: string
+      name: string
+      kuId: string
+      role: string
+    }>()
+
+    const requests: AxiosRequestConfig[] = []
+    api.defaults.adapter = async (config) => {
+      requests.push(config)
+      return mockApiResponse({ code: 200, msg: 'success', data: [] })
+    }
+
+    await getLevelServerLog('Master', 30)
+    await getOnlinePlayers('Master')
+    await getAllOnlinePlayers()
+    await rollbackGame(3)
+    await regenerateWorld()
+
+    expect(requestAt(requests, 0).url).toBe('/api/game/level/server/log?levelName=Master&lines=30')
+    expect(requestAt(requests, 1).url).toBe('/api/game/8level/players?levelName=Master')
+    expect(requestAt(requests, 2).url).toBe('/api/game/8level/players/all')
+    expect(requestAt(requests, 3).url).toBe('/api/game/rollback?dayNums=3')
+    expect(requestAt(requests, 4).url).toBe('/api/game/regenerateworld')
+    expect(getLevelLogDownloadUrl('Caves')).toBe(
+      '/api/game/level/server/download?levelName=Caves&fileName=server_log.txt',
+    )
   })
 })

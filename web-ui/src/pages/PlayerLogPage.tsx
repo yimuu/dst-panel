@@ -1,5 +1,5 @@
 import { ProCard } from '@ant-design/pro-components'
-import { App as AntApp, Button, Input, Space, Table, Tag } from 'antd'
+import { App as AntApp, Button, Input, Popconfirm, Space, Table, Tag } from 'antd'
 import { DeleteOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons'
 import { useEffect, useState } from 'react'
 
@@ -63,9 +63,26 @@ export default function PlayerLogPage() {
         <Button icon={<ReloadOutlined />} onClick={() => void loadLogs()}>
           刷新
         </Button>
-        <Button danger icon={<DeleteOutlined />} onClick={() => void handleDelete()}>
-          删除
-        </Button>
+        <Popconfirm
+          title="确认删除选中的玩家日志"
+          description="删除后无法从面板恢复。"
+          okText="确认"
+          cancelText="取消"
+          disabled={selectedIds.length === 0}
+          onConfirm={() => void handleDelete()}
+        >
+          <Button
+            danger
+            icon={<DeleteOutlined />}
+            onClick={() => {
+              if (selectedIds.length === 0) {
+                message.warning('请选择日志')
+              }
+            }}
+          >
+            删除
+          </Button>
+        </Popconfirm>
       </Space>
       <Table
         rowKey={(row) => row.ID ?? row.id ?? `${row.name}-${row.createdAt}`}

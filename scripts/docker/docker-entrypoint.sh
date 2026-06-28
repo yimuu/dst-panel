@@ -19,6 +19,7 @@ data_mod="${DATA_DIR}/mod"
 password_file="${DATA_DIR}/password.txt"
 config_file="${DATA_DIR}/config.yml"
 dst_config_file="${DATA_DIR}/dst_config"
+go_steam_api_key="73DF9F781D195DFD3D19DED1CB72EEE6"
 
 # ===== 基础目录 =====
 mkdir -p "$DATA_DIR"
@@ -33,16 +34,23 @@ if [ ! -f "$config_file" ]; then
   sed -i 's|^dataDir:.*|dataDir: "."|' "$config_file"
 fi
 
+if ! grep -q '^steamAPIKey:' "$config_file"; then
+  echo "Adding default Steam API key to Docker runtime config..."
+  sed -i "/^database:/a steamAPIKey: \"${go_steam_api_key}\"" "$config_file"
+fi
+
 if [ ! -f "$dst_config_file" ]; then
   echo "Creating Docker DST config..."
   cp "$APP_DIR/dst_config" "$dst_config_file"
 fi
 
 echo "Refreshing packaged frontend assets..."
+rm -rf "${DATA_DIR:?}/dist"
 mkdir -p "$DATA_DIR/dist"
 cp -a "$APP_DIR/dist/." "$DATA_DIR/dist/"
 
 echo "Refreshing packaged static assets..."
+rm -rf "${DATA_DIR:?}/static"
 mkdir -p "$DATA_DIR/static"
 cp -a "$APP_DIR/static/." "$DATA_DIR/static/"
 
@@ -113,6 +121,10 @@ while [ ! -e "${steam_dst_server}/bin/dontstarve_dedicated_server_nullrenderer" 
   sleep 3
   ((retry++))
 done
+
+if [ -f "${steam_dst_server}/bin/dontstarve_dedicated_server_nullrenderer" ]; then
+  chmod +x "${steam_dst_server}/bin/dontstarve_dedicated_server_nullrenderer"
+fi
 
 echo "SteamCMD ready at $steam_cmd_path"
 echo "DST server ready at $steam_dst_server"

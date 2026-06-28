@@ -34,6 +34,17 @@ whiteadminip: "127.0.0.1"
 }
 
 #[test]
+fn repository_default_config_includes_go_compatible_steam_api_key() {
+    let config_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("config.yml");
+    let config = AppConfig::from_file(&config_path).unwrap();
+
+    assert_eq!(
+        config.steam_api_key.as_deref(),
+        Some("73DF9F781D195DFD3D19DED1CB72EEE6")
+    );
+}
+
+#[test]
 fn loads_main_data_dir_config_key() {
     let dir = tempdir().unwrap();
     let config_path = dir.path().join("config.yml");

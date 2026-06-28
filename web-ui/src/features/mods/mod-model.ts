@@ -60,6 +60,10 @@ export function normalizeModConfig(value: unknown): ModConfigEntry[] {
   }
 
   if (isRecord(value)) {
+    if ('configuration_options' in value) {
+      return normalizeModConfig(value.configuration_options)
+    }
+
     return Object.values(value).filter(isModConfigEntry)
   }
 
@@ -73,6 +77,69 @@ export function getModImageUrl(mod: ModSummary): string {
   }
 
   return '/assets/dst/mods.png'
+}
+
+export function createModOverridesLua(mods: ModSummary[]): string {
+  const entries = mods
+    .filter((mod) => isModEnabled(mod))
+    .map(createModOverrideEntry)
+    .filter((entry) => entry.length > 0)
+
+  if (entries.length === 0) {
+    return 'return {}'
+  }
+
+  return ['return {', ...entries, '}'].join('\n')
+}
+
+function createModOverrideEntry(mod: ModSummary): string {
+  const modId = getModWorkshopId(mod)
+  if (!modId) {
+    return ''
+  }
+
+  const options = normalizeModConfig(mod.mod_config)
+    .map((entry) => {
+      const name = typeof entry.name === 'string' ? entry.name.trim() : ''
+      if (!name) {
+        return ''
+      }
+      return `      [${luaString(name)}] = ${luaValue(entry.default)},`
+    })
+    .filter((line) => line.length > 0)
+
+  if (options.length === 0) {
+    return `  ["workshop-${modId}"] = { enabled = true },`
+  }
+
+  return [
+    `  ["workshop-${modId}"] = {`,
+    '    enabled = true,',
+    '    configuration_options = {',
+    ...options,
+    '    },',
+    '  },',
+  ].join('\n')
+}
+
+function luaValue(value: unknown): string {
+  if (typeof value === 'boolean') {
+    return value ? 'true' : 'false'
+  }
+
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return String(value)
+  }
+
+  if (typeof value === 'string') {
+    return luaString(value)
+  }
+
+  return luaString(String(value ?? ''))
+}
+
+function luaString(value: string): string {
+  return JSON.stringify(value)
 }
 
 export function formatModUpdatedAt(timestamp: number | string | undefined): string {
@@ -128,7 +195,7 @@ function padTime(value: number): string {
 }
 
 function isModConfigEntry(value: unknown): value is ModConfigEntry {
-  return isRecord(value)
+  return isRecord(value) && !Array.isArray(value)
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

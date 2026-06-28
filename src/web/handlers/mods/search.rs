@@ -6,7 +6,11 @@ use axum::{
 };
 use serde_json::{Value, json};
 
-use crate::web::{app::AppState, error::AppResult, handlers::legacy_success};
+use crate::web::{
+    app::AppState,
+    error::{AppError, AppResult},
+    handlers::legacy_success,
+};
 
 use super::{
     dto::SearchQuery,
@@ -28,16 +32,22 @@ pub(crate) async fn search_handler(
 
     let data = if text.parse::<i64>().is_ok() {
         let mut items = Vec::new();
-        if let Some(detail) = fetch_steam_details(&state, &[text.as_str()], STEAM_DETAIL_LANG)
-            .await?
-            .pop()
-            && detail.consumer_appid == 322330.0
-        {
-            items.push(search_item_from_detail(
-                &detail,
-                SearchImageMode::Suffixed,
-                SearchVoteMode::Zero,
-            ));
+        match fetch_steam_details(&state, &[text.as_str()], STEAM_DETAIL_LANG).await {
+            Ok(mut details) => {
+                if let Some(detail) = details.pop()
+                    && detail.consumer_appid == 322330.0
+                {
+                    items.push(search_item_from_detail(
+                        &detail,
+                        SearchImageMode::Suffixed,
+                        SearchVoteMode::Zero,
+                    ));
+                }
+            }
+            Err(AppError::BadRequest(message)) if message == "steam API key is not configured" => {
+                items.push(minimal_numeric_search_item(&text));
+            }
+            Err(error) => return Err(error),
         }
         json!({
             "page": 1,
@@ -57,4 +67,23 @@ pub(crate) async fn search_handler(
         "served mod search"
     );
     Ok(Json(legacy_success(data)))
+}
+
+fn minimal_numeric_search_item(mod_id: &str) -> Value {
+    json!({
+        "id": mod_id,
+        "modid": mod_id,
+        "name": format!("workshop-{mod_id}"),
+        "author": "",
+        "desc": "",
+        "time": 0,
+        "sub": 0,
+        "img": "",
+        "file_url": "",
+        "v": "",
+        "last_time": 0.0,
+        "consumer_appid": 0.0,
+        "creator_appid": 0.0,
+        "vote": {"star": 0, "num": 0},
+    })
 }

@@ -2,10 +2,14 @@
 
 use super::*;
 
+const MASTER_LEVELDATAOVERRIDE: &str = include_str!("../../../static/Master/leveldataoverride.lua");
+const CAVES_LEVELDATAOVERRIDE: &str = include_str!("../../../static/Caves/leveldataoverride.lua");
+
 /// Starts one DST shard.
 pub(crate) async fn start_level(
     runner: &dyn CommandRunner,
     process_provider: &dyn ProcessSnapshotProvider,
+    root: &Path,
     context: &LifecycleContext,
     level_name: &str,
     grace_period: Duration,
@@ -14,7 +18,7 @@ pub(crate) async fn start_level(
         .map_err(|error| AppError::bad_request(error.to_string()))?
         .into_string();
     stop_level(runner, process_provider, context, &level_name, grace_period).await?;
-    launch_level(runner, context, &level_name).await
+    launch_level(runner, root, context, &level_name).await
 }
 
 /// Requests graceful shutdown for one DST shard.
@@ -109,7 +113,7 @@ pub(crate) async fn start_all(
         stop_level(runner, process_provider, context, level_name, grace_period).await?;
     }
     for level_name in &level_names {
-        launch_level(runner, context, level_name).await?;
+        launch_level(runner, root, context, level_name).await?;
     }
     Ok(())
 }
@@ -169,9 +173,11 @@ pub(crate) fn copy_steamclient_before_single_start(
 
 async fn launch_level(
     runner: &dyn CommandRunner,
+    root: &Path,
     context: &LifecycleContext,
     level_name: &str,
 ) -> AppResult<()> {
+    ensure_level_files_before_launch(root, context, level_name)?;
     let spec = launch_level_spec(context, level_name)?;
     run_go_lenient(
         runner,
@@ -182,6 +188,145 @@ async fn launch_level(
     )
     .await;
     Ok(())
+}
+
+fn ensure_level_files_before_launch(
+    root: &Path,
+    context: &LifecycleContext,
+    level_name: &str,
+) -> AppResult<()> {
+    let cluster_dir = dst::cluster_dir(root, &context.cluster_name)
+        .map_err(file_error("resolve cluster directory"))?;
+    ensure_cluster_ini_before_launch(&cluster_dir)?;
+    let worlds = level::list_existing_worlds_from_cluster_dir(&cluster_dir)?;
+    let world = worlds
+        .iter()
+        .find(|world| world.uuid.eq_ignore_ascii_case(level_name));
+    let (leveldataoverride, repair_leveldataoverride) =
+        leveldataoverride_for_launch(&cluster_dir, level_name)?;
+    let (modoverrides, server_ini) = if let Some(world) = world {
+        (world.modoverrides.clone(), world.server_ini.clone())
+    } else {
+        (
+            "return {}".to_owned(),
+            default_server_ini_for_missing_level(level_name, &worlds),
+        )
+    };
+    if repair_leveldataoverride {
+        dst::safe_write_cluster_file(
+            &cluster_dir,
+            Path::new(level_name).join("leveldataoverride.lua"),
+            &leveldataoverride,
+        )
+        .map_err(file_error("repair leveldataoverride"))?;
+    }
+
+    dst::write_world_files_if_missing(
+        &cluster_dir,
+        level_name,
+        &leveldataoverride,
+        &modoverrides,
+        &server_ini,
+    )
+    .map_err(file_error("repair level files"))?;
+    Ok(())
+}
+
+fn ensure_cluster_ini_before_launch(cluster_dir: &Path) -> AppResult<()> {
+    let contents = dst::safe_read_cluster_file_to_string(cluster_dir, "cluster.ini")
+        .map_err(file_error("read cluster.ini"))?;
+    let Some(contents) = contents else {
+        return dst::safe_write_cluster_file(
+            cluster_dir,
+            "cluster.ini",
+            dst::cluster_ini::ClusterIni::default_for_new_cluster().to_ini(),
+        )
+        .map_err(file_error("write cluster.ini"));
+    };
+    if !cluster_ini_needs_game_mode_repair(&contents) {
+        return Ok(());
+    }
+    let cluster_ini = dst::cluster_ini::ClusterIni::from_contents(&contents);
+    dst::safe_write_cluster_file(cluster_dir, "cluster.ini", cluster_ini.to_ini())
+        .map_err(file_error("repair cluster.ini"))
+}
+
+fn cluster_ini_needs_game_mode_repair(contents: &str) -> bool {
+    contents
+        .lines()
+        .filter_map(|line| line.trim().split_once('='))
+        .find(|(key, _)| key.trim() == "game_mode")
+        .map(|(_, value)| value.trim().is_empty())
+        .unwrap_or(true)
+}
+
+fn leveldataoverride_for_launch(cluster_dir: &Path, level_name: &str) -> AppResult<(String, bool)> {
+    let existing = dst::safe_read_cluster_file_to_string(
+        cluster_dir,
+        Path::new(level_name).join("leveldataoverride.lua"),
+    )
+    .map_err(file_error("read leveldataoverride"))?;
+    let default = default_leveldataoverride_for_level(level_name).to_owned();
+    match existing {
+        Some(contents) if should_repair_leveldataoverride(level_name, &contents) => {
+            Ok((default, true))
+        }
+        Some(contents) if !contents.trim().is_empty() => Ok((contents, false)),
+        _ => Ok((default, false)),
+    }
+}
+
+fn default_leveldataoverride_for_level(level_name: &str) -> &'static str {
+    if level_name.eq_ignore_ascii_case("Master") {
+        MASTER_LEVELDATAOVERRIDE
+    } else {
+        CAVES_LEVELDATAOVERRIDE
+    }
+}
+
+fn should_repair_leveldataoverride(level_name: &str, contents: &str) -> bool {
+    !level_name.eq_ignore_ascii_case("Master") && is_empty_lua_table(contents)
+}
+
+fn is_empty_lua_table(contents: &str) -> bool {
+    contents
+        .chars()
+        .filter(|value| !value.is_whitespace())
+        .collect::<String>()
+        == "return{}"
+}
+
+fn default_server_ini_for_missing_level(
+    level_name: &str,
+    worlds: &[level::World],
+) -> dst::server_ini::ServerIni {
+    if level_name.eq_ignore_ascii_case("Master") {
+        return dst::server_ini::ServerIni::master_default();
+    }
+
+    let mut server_ini = dst::server_ini::ServerIni::caves_default();
+    server_ini.name = level_name.to_owned();
+    if !level_name.eq_ignore_ascii_case("Caves") {
+        server_ini.server_port = next_level_port(worlds, |ini| ini.server_port, 10998);
+        server_ini.authentication_port =
+            next_level_port(worlds, |ini| ini.authentication_port, 8766);
+        server_ini.master_server_port =
+            next_level_port(worlds, |ini| ini.master_server_port, 27016);
+    }
+    server_ini
+}
+
+fn next_level_port(
+    worlds: &[level::World],
+    field: impl Fn(&dst::server_ini::ServerIni) -> u64,
+    fallback: u64,
+) -> u64 {
+    worlds
+        .iter()
+        .map(|world| field(&world.server_ini))
+        .max()
+        .unwrap_or(fallback - 1)
+        + 1
 }
 
 fn launch_level_spec(context: &LifecycleContext, level_name: &str) -> AppResult<CommandSpec> {

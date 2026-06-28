@@ -10,6 +10,7 @@ use crate::dst;
 use super::session::{MapLevel, latest_world_session_file, read_capped_bytes, read_cluster_text};
 
 const TILE_SCALE: usize = 16;
+const MAX_MAP_IMAGE_SIDE: usize = 2048;
 const MAX_MAP_PIXELS: usize = 16_777_216;
 const MAX_MAP_IMAGE_BYTES: u64 = 72 * 1024 * 1024;
 const MAX_TILES_BASE64_BYTES: usize = 8 * 1024 * 1024;
@@ -63,22 +64,15 @@ fn render_session_map_png(contents: &str) -> io::Result<Vec<u8>> {
 
     // Preserve Go's call-site quirk: ExtractDimensions returns height,width but
     // the caller passes them into GenerateMap(width,height).
-    let image_width = height
-        .checked_mul(TILE_SCALE)
+    let image_tile_width = height;
+    let image_tile_height = width;
+    let tile_scale = tile_scale_for_dimensions(image_tile_width, image_tile_height)?;
+    let image_width = image_tile_width
+        .checked_mul(tile_scale)
         .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "地图宽度过大"))?;
-    let image_height = width
-        .checked_mul(TILE_SCALE)
+    let image_height = image_tile_height
+        .checked_mul(tile_scale)
         .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "地图高度过大"))?;
-    if image_width
-        .checked_mul(image_height)
-        .filter(|pixels| *pixels <= MAX_MAP_PIXELS)
-        .is_none()
-    {
-        return Err(io::Error::new(
-            io::ErrorKind::InvalidData,
-            "地图尺寸超过安全限制",
-        ));
-    }
 
     let tiles_base64 = extract_tiles_base64(contents)?;
     if tiles_base64.len() > MAX_TILES_BASE64_BYTES {
@@ -88,8 +82,33 @@ fn render_session_map_png(contents: &str) -> io::Result<Vec<u8>> {
         ));
     }
     let tile_ids = decode_tile_ids(tiles_base64)?;
-    let pixels = render_rgba_pixels(&tile_ids, height, width);
+    let pixels = render_rgba_pixels(&tile_ids, image_tile_width, image_tile_height, tile_scale);
     encode_png_rgba(image_width as u32, image_height as u32, &pixels)
+}
+
+fn tile_scale_for_dimensions(width: usize, height: usize) -> io::Result<usize> {
+    let tile_count = width
+        .checked_mul(height)
+        .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "地图尺寸超过安全限制"))?;
+    if tile_count == 0 {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "地图尺寸不能为空",
+        ));
+    }
+
+    let max_side = width.max(height);
+    let max_scale_by_side = MAX_MAP_IMAGE_SIDE / max_side;
+    let max_scale_by_pixels = ((MAX_MAP_PIXELS / tile_count) as f64).sqrt().floor() as usize;
+    let max_scale = max_scale_by_side.min(max_scale_by_pixels);
+    if max_scale == 0 {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "地图尺寸超过安全限制",
+        ));
+    }
+
+    Ok(TILE_SCALE.min(max_scale))
 }
 
 fn extract_dimension(contents: &str, key: &str) -> io::Result<usize> {
@@ -204,9 +223,9 @@ fn restore_tile_id(original: i32) -> i32 {
     0
 }
 
-fn render_rgba_pixels(tile_ids: &[i32], width: usize, height: usize) -> Vec<u8> {
-    let image_width = width * TILE_SCALE;
-    let image_height = height * TILE_SCALE;
+fn render_rgba_pixels(tile_ids: &[i32], width: usize, height: usize, scale: usize) -> Vec<u8> {
+    let image_width = width * scale;
+    let image_height = height * scale;
     let mut pixels = vec![0_u8; image_width * image_height * 4];
 
     for y in 0..height {
@@ -216,10 +235,10 @@ fn render_rgba_pixels(tile_ids: &[i32], width: usize, height: usize) -> Vec<u8> 
             };
             let (red, green, blue) = tile_color(*tile_id).unwrap_or((0, 0, 0));
             let flipped_x = width - x - 1;
-            for dy in 0..TILE_SCALE {
-                for dx in 0..TILE_SCALE {
-                    let px = flipped_x * TILE_SCALE + dx;
-                    let py = y * TILE_SCALE + dy;
+            for dy in 0..scale {
+                for dx in 0..scale {
+                    let px = flipped_x * scale + dx;
+                    let py = y * scale + dy;
                     let offset = (py * image_width + px) * 4;
                     pixels[offset] = red;
                     pixels[offset + 1] = green;

@@ -4,7 +4,7 @@
 
 ## 目录内容
 
-- `Dockerfile` - Docker 镜像构建文件（基于 Ubuntu 20.04）
+- `Dockerfile` - Docker 镜像构建文件（基于 Ubuntu 24.04）
 - `docker-entrypoint.sh` - 容器启动入口脚本
 - `docker_build.sh` - 构建并推送镜像到 Docker Hub 的自动化脚本
 - `docker_dst_config` - Docker 环境默认配置文件
@@ -83,13 +83,13 @@ docker run -d \
 
 ## 镜像特性
 
-- **基础镜像**: Ubuntu 20.04
+- **基础镜像**: Ubuntu 24.04
 - **目标架构**: Linux x86_64 (amd64)
 - **已安装组件**:
   - curl, wget - 网络工具
   - screen - 游戏进程管理
-  - lib32gcc1, lib32stdc++6 - 32位运行库（饥荒服务器依赖）
-  - libcurl4-gnutls-dev - cURL 开发库
+  - lib32gcc-s1, lib32stdc++6 - 32位运行库（饥荒服务器依赖）
+  - libcurl3t64-gnutls, libcurl3t64-gnutls:i386 - 饥荒服务端与 SteamCMD cURL 运行库
   - procps, sudo, unzip - 系统工具
 
 ## 配置自定义

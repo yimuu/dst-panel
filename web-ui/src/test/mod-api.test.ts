@@ -110,4 +110,26 @@ describe('mod api contracts', () => {
     expect(requestAt(requests, 3).url).toBe('/api/mod/ugc?levelName=Master&workshopId=378160973')
     expect(requestAt(requests, 3).method).toBe('delete')
   })
+
+  it('serializes parsed mod_config objects before saving raw modinfo', async () => {
+    const requests: AxiosRequestConfig[] = []
+    api.defaults.adapter = async (config) => {
+      requests.push(config)
+      return mockApiResponse({ code: 200, msg: 'success', data: null })
+    }
+
+    await saveModInfo({
+      modid: '378160973',
+      mod_config: {
+        configuration_options: [{ name: 'language', default: 'zh' }],
+      },
+    })
+
+    const payload = JSON.parse(requestAt(requests, 0).data as string)
+    expect(payload.mod_config).toBe(
+      JSON.stringify({
+        configuration_options: [{ name: 'language', default: 'zh' }],
+      }),
+    )
+  })
 })

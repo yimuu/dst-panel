@@ -214,6 +214,7 @@ async fn start_level(context: &SchedulerRuntimeContext, task: &JobTaskRecord) ->
     lifecycle::start_level(
         context.command_runner.as_ref(),
         context.process_snapshot_provider.as_ref(),
+        &context.root_path,
         &lifecycle,
         &task_level(task),
         context.lifecycle_grace_period,

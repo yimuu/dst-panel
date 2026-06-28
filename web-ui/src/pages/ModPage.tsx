@@ -8,6 +8,8 @@ import {
   Form,
   Image,
   Input,
+  Pagination,
+  Popconfirm,
   Select,
   Space,
   Spin,
@@ -42,7 +44,9 @@ import {
   type ModSearchItem,
   type UgcModInfo,
 } from '@/features/mods/mod.api'
+import { saveGameConfig } from '@/features/game/game.api'
 import {
+  createModOverridesLua,
   formatModUpdatedAt,
   formatWorkshopId,
   getConfigEntryLabel,
@@ -62,6 +66,30 @@ const levelOptions = [
   { label: '洞穴', value: 'Caves' },
 ]
 
+const modSearchPageSize = 12
+
+const modSearchModeOptions = [
+  { label: '关键词', value: 'keyword' },
+  { label: '创意工坊ID', value: 'workshopId' },
+  { label: '全部相关', value: 'all' },
+] satisfies Array<{ label: string; value: ModSearchMode }>
+
+type ModSearchMode = 'keyword' | 'workshopId' | 'all'
+
+interface ModSearchMeta {
+  page: number
+  size: number
+  total: number
+  totalPage: number
+}
+
+const defaultSearchMeta: ModSearchMeta = {
+  page: 1,
+  size: modSearchPageSize,
+  total: 0,
+  totalPage: 0,
+}
+
 export default function ModPage() {
   const { message } = AntApp.useApp()
   const [loading, setLoading] = useState(true)
@@ -72,8 +100,11 @@ export default function ModPage() {
   const [optionDrawerOpen, setOptionDrawerOpen] = useState(false)
   const [actionLoading, setActionLoading] = useState<string>()
   const [searchText, setSearchText] = useState('')
+  const [searchMode, setSearchMode] = useState<ModSearchMode>('keyword')
   const [searching, setSearching] = useState(false)
   const [searchResults, setSearchResults] = useState<ModSearchItem[]>([])
+  const [searchMeta, setSearchMeta] = useState<ModSearchMeta>(defaultSearchMeta)
+  const [subscriptionSearchLoaded, setSubscriptionSearchLoaded] = useState(false)
   const [ugcLoading, setUgcLoading] = useState(false)
   const [ugcMods, setUgcMods] = useState<UgcModInfo[]>([])
 
@@ -143,6 +174,19 @@ export default function ModPage() {
     }
   }
 
+  async function handleSaveToLevel() {
+    try {
+      setActionLoading('save-level')
+      const modData = createModOverridesLua(mods)
+      assertApiSuccess(await saveGameConfig({ modData }))
+      message.success(`${selectedLevelLabel}模组配置已保存，重启世界后生效`)
+    } catch (error) {
+      message.error(getErrorMessage(error, '保存世界模组失败'))
+    } finally {
+      setActionLoading(undefined)
+    }
+  }
+
   async function handleUpdateAll() {
     try {
       setActionLoading('update-all')
@@ -156,23 +200,70 @@ export default function ModPage() {
     }
   }
 
-  async function handleUpdateSelected() {
+  function handleOpenOptions(mod: ModInfoRecord) {
+    setSelectedModId(getModWorkshopId(mod))
+    setOptionDrawerOpen(true)
+  }
+
+  async function handleUpdateMod(mod: ModInfoRecord) {
+    const modId = getModWorkshopId(mod)
+    if (!modId) {
+      return
+    }
+
+    try {
+      setSelectedModId(modId)
+      setActionLoading(`update-${modId}`)
+      const envelope = await updateMod(modId)
+      const updatedMod = assertApiSuccess(envelope)
+      setMods((current) => upsertMod(current, updatedMod))
+      setSelectedModId(getModWorkshopId(updatedMod))
+      message.success('模组已更新')
+    } catch (error) {
+      message.error(getErrorMessage(error, '更新模组失败'))
+    } finally {
+      setActionLoading(undefined)
+    }
+  }
+
+  function handleConfigDefaultChange(entry: ModConfigEntry, nextDefault: unknown) {
+    if (!selectedMod) {
+      return
+    }
+
+    const modId = getModWorkshopId(selectedMod)
+    const entryName = typeof entry.name === 'string' ? entry.name : ''
+    if (!modId || !entryName) {
+      return
+    }
+
+    setMods((current) =>
+      current.map((mod) =>
+        getModWorkshopId(mod) === modId
+          ? {
+              ...mod,
+              mod_config: updateModConfigDefault(mod.mod_config, entryName, nextDefault),
+            }
+          : mod,
+      ),
+    )
+  }
+
+  async function handleSavePreferences() {
     if (!selectedMod) {
       return
     }
 
     try {
-      setActionLoading('update-selected')
-      const envelope = await updateMod(getModWorkshopId(selectedMod))
-      const updatedMod = assertApiSuccess(envelope)
-      setMods((current) =>
-        current.map((mod) =>
-          getModWorkshopId(mod) === getModWorkshopId(updatedMod) ? updatedMod : mod,
-        ),
-      )
-      message.success('模组已更新')
+      setActionLoading('save-options')
+      const envelope = await saveModInfo(selectedMod)
+      const savedMod = assertApiSuccess(envelope)
+      setMods((current) => upsertMod(current, savedMod))
+      setSelectedModId(getModWorkshopId(savedMod))
+      setOptionDrawerOpen(false)
+      message.success('模组偏好已保存')
     } catch (error) {
-      message.error(getErrorMessage(error, '更新模组失败'))
+      message.error(getErrorMessage(error, '保存模组偏好失败'))
     } finally {
       setActionLoading(undefined)
     }
@@ -193,12 +284,15 @@ export default function ModPage() {
     }
   }
 
-  async function handleSearch(value = searchText) {
+  async function handleSearch(value = searchText, page = 1, mode = searchMode) {
     try {
+      setSubscriptionSearchLoaded(true)
       setSearching(true)
-      const envelope = await searchMods(value.trim())
+      const searchValue = buildSearchQueryText(mode, value)
+      const envelope = await searchMods(searchValue, page, modSearchPageSize)
       const result = assertApiSuccess(envelope)
       setSearchResults(result.data ?? [])
+      setSearchMeta(normalizeSearchMeta(result, page, modSearchPageSize))
     } catch (error) {
       message.error(getErrorMessage(error, '搜索模组失败'))
     } finally {
@@ -207,9 +301,15 @@ export default function ModPage() {
   }
 
   async function handleSubscribe(item: ModSearchItem) {
+    const modId = getSearchItemWorkshopId(item)
+    if (!modId) {
+      message.warning('无法识别模组 ID')
+      return
+    }
+
     try {
-      setActionLoading(`subscribe-${item.modid}`)
-      const envelope = await subscribeMod(item.modid)
+      setActionLoading(`subscribe-${modId}`)
+      const envelope = await subscribeMod(modId)
       const subscribedMod = assertApiSuccess(envelope)
       setMods((current) => upsertMod(current, subscribedMod))
       setSelectedModId(getModWorkshopId(subscribedMod))
@@ -271,8 +371,19 @@ export default function ModPage() {
 
   function handleTabChange(key: string) {
     setActiveTab(key)
+    if (key === 'subscription' && !subscriptionSearchLoaded) {
+      void handleSearch('', 1, 'all')
+    }
     if (key === 'ugc') {
       void loadUgcMods()
+    }
+  }
+
+  function handleSearchModeChange(mode: ModSearchMode) {
+    setSearchMode(mode)
+    if (mode === 'all') {
+      setSearchText('')
+      void handleSearch('', 1, mode)
     }
   }
 
@@ -326,7 +437,13 @@ export default function ModPage() {
                     options={levelOptions}
                     onChange={setLevelName}
                   />
-                  <Button type="primary" className="mod-level-save">
+                  <Button
+                    type="primary"
+                    className="mod-level-save"
+                    loading={actionLoading === 'save-level'}
+                    disabled={mods.length === 0}
+                    onClick={() => void handleSaveToLevel()}
+                  >
                     保存到{selectedLevelLabel}
                   </Button>
                 </Space>
@@ -374,15 +491,39 @@ export default function ModPage() {
                                   onChange={(checked) => handleToggle(mod, checked)}
                                 />
                                 <Button
-                                  danger
-                                  type="link"
+                                  type="primary"
                                   size="small"
-                                  icon={<DeleteOutlined />}
-                                  loading={actionLoading === `delete-${modId}`}
-                                  onClick={() => void handleDelete(mod)}
+                                  icon={<ToolOutlined />}
+                                  onClick={() => handleOpenOptions(mod)}
                                 >
-                                  删除
+                                  选项
                                 </Button>
+                                <Button
+                                  type="primary"
+                                  size="small"
+                                  icon={<SyncOutlined />}
+                                  loading={actionLoading === `update-${modId}`}
+                                  onClick={() => void handleUpdateMod(mod)}
+                                >
+                                  更新
+                                </Button>
+                                <Popconfirm
+                                  title={`确认删除 ${getModDisplayName(mod)}`}
+                                  description="删除后会从当前模组列表中移除该配置。"
+                                  okText="确认"
+                                  cancelText="取消"
+                                  onConfirm={() => void handleDelete(mod)}
+                                >
+                                  <Button
+                                    danger
+                                    type="link"
+                                    size="small"
+                                    icon={<DeleteOutlined />}
+                                    loading={actionLoading === `delete-${modId}`}
+                                  >
+                                    删除
+                                  </Button>
+                                </Popconfirm>
                               </span>
                             </span>
                           </div>
@@ -394,23 +535,6 @@ export default function ModPage() {
                 )}
 
                 <Space className="mod-bottom-actions" wrap>
-                  <Button
-                    type="primary"
-                    icon={<ToolOutlined />}
-                    disabled={!selectedMod}
-                    onClick={() => setOptionDrawerOpen(true)}
-                  >
-                    选项
-                  </Button>
-                  <Button
-                    type="primary"
-                    icon={<SyncOutlined />}
-                    disabled={!selectedMod}
-                    loading={actionLoading === 'update-selected'}
-                    onClick={() => void handleUpdateSelected()}
-                  >
-                    更新
-                  </Button>
                   <Button
                     icon={<ShopOutlined />}
                     disabled={!selectedMod}
@@ -427,39 +551,56 @@ export default function ModPage() {
             label: '模组订阅',
             children: (
               <div className="mod-subscription-panel">
-                <Input.Search
-                  className="mod-search-input"
-                  enterButton={
-                    <Button type="primary" icon={<SearchOutlined />}>
-                      搜索
-                    </Button>
-                  }
-                  loading={searching}
-                  placeholder="输入创意工坊 ID 或关键词"
-                  value={searchText}
-                  onChange={(event) => setSearchText(event.target.value)}
-                  onSearch={(value) => void handleSearch(value)}
-                />
+                <Space className="mod-search-toolbar" wrap>
+                  <Select
+                    aria-label="查询方式"
+                    className="mod-search-mode"
+                    value={searchMode}
+                    options={modSearchModeOptions}
+                    onChange={handleSearchModeChange}
+                  />
+                  <Input.Search
+                    className="mod-search-input"
+                    enterButton={
+                      <Button type="primary" icon={<SearchOutlined />}>
+                        搜索
+                      </Button>
+                    }
+                    disabled={searchMode === 'all'}
+                    loading={searching}
+                    placeholder="输入创意工坊 ID 或关键词"
+                    value={searchText}
+                    onChange={(event) => setSearchText(event.target.value)}
+                    onSearch={(value) => void handleSearch(value, 1)}
+                  />
+                </Space>
                 <div className="mod-search-grid">
-                  {searchResults.map((item) => (
-                    <article className="mod-search-card" key={item.modid}>
-                      <img src={item.img || '/assets/dst/mods.png'} alt={item.name || item.modid} />
+                  {searchResults.map((item, index) => (
+                    <article
+                      className="mod-search-card"
+                      key={getSearchItemWorkshopId(item) || item.name || `search-${index}`}
+                    >
+                      <img
+                        src={getSearchItemImageUrl(item)}
+                        alt={item.name || getSearchItemWorkshopId(item)}
+                      />
                       <div className="mod-search-card-body">
-                        <h3>{item.name || item.modid}</h3>
+                        <h3>{item.name || getSearchItemWorkshopId(item)}</h3>
                         <Typography.Text type="secondary">
                           作者: {item.author || '-'}
                         </Typography.Text>
                         <Typography.Text type="secondary">
-                          评分: {item.score ?? '-'}
+                          评分: {formatSearchScore(item)}
                         </Typography.Text>
                         <Typography.Text type="secondary">
-                          订阅: {item.subscription || '-'}
+                          订阅: {formatSearchSubscription(item)}
                         </Typography.Text>
-                        <Typography.Text type="secondary">{item.time || '-'}</Typography.Text>
+                        <Typography.Text type="secondary">{formatSearchTime(item)}</Typography.Text>
                         <Button
                           block
                           type="primary"
-                          loading={actionLoading === `subscribe-${item.modid}`}
+                          disabled={!getSearchItemWorkshopId(item)}
+                          loading={actionLoading === `subscribe-${getSearchItemWorkshopId(item)}`}
                           onClick={() => void handleSubscribe(item)}
                         >
                           订阅
@@ -468,7 +609,19 @@ export default function ModPage() {
                     </article>
                   ))}
                 </div>
-                {!searching && searchResults.length === 0 ? (
+                {searchMeta.total > 0 ? (
+                  <Pagination
+                    className="mod-search-pagination"
+                    current={searchMeta.page}
+                    disabled={searching}
+                    pageSize={searchMeta.size}
+                    showSizeChanger={false}
+                    showTotal={(total, range) => `${range[0]}-${range[1]} / ${total}`}
+                    total={searchMeta.total}
+                    onChange={(page) => void handleSearch(searchText, page)}
+                  />
+                ) : null}
+                {!searching && subscriptionSearchLoaded && searchResults.length === 0 ? (
                   <Empty description="暂无搜索结果" />
                 ) : null}
               </div>
@@ -533,7 +686,11 @@ export default function ModPage() {
         open={optionDrawerOpen}
         onClose={() => setOptionDrawerOpen(false)}
         extra={
-          <Button type="primary" onClick={() => setOptionDrawerOpen(false)}>
+          <Button
+            type="primary"
+            loading={actionLoading === 'save-options'}
+            onClick={() => void handleSavePreferences()}
+          >
             保存偏好
           </Button>
         }
@@ -543,7 +700,11 @@ export default function ModPage() {
         ) : (
           <Form className="mod-option-form" labelCol={{ flex: '180px' }} wrapperCol={{ flex: 1 }}>
             {selectedModOptions.map((entry) => (
-              <ModOptionControl key={getConfigEntryLabel(entry)} entry={entry} />
+              <ModOptionControl
+                key={getConfigEntryLabel(entry)}
+                entry={entry}
+                onChange={(nextValue) => handleConfigDefaultChange(entry, nextValue)}
+              />
             ))}
           </Form>
         )}
@@ -581,29 +742,182 @@ function ModDetails({ mod }: { mod: ModInfoRecord | undefined }) {
   )
 }
 
-function ModOptionControl({ entry }: { entry: ModConfigEntry }) {
-  const options = (entry.options ?? []).map((option) => ({
+function ModOptionControl({
+  entry,
+  onChange,
+}: {
+  entry: ModConfigEntry
+  onChange: (nextValue: unknown) => void
+}) {
+  const sourceOptions = Array.isArray(entry.options) ? entry.options : []
+  const options = sourceOptions.map((option) => ({
     label: getConfigOptionLabel(option),
-    value: stringifyConfigValue(option.data),
+    value: configValueKey(option.data),
   }))
 
   return (
     <Form.Item label={getConfigEntryLabel(entry)}>
       <Select
-        value={stringifyConfigValue(entry.default)}
+        value={configValueKey(entry.default)}
         options={
           options.length > 0
             ? options
             : [
                 {
                   label: stringifyConfigValue(entry.default),
-                  value: stringifyConfigValue(entry.default),
+                  value: configValueKey(entry.default),
                 },
               ]
         }
+        onChange={(value) => {
+          const matchedOption = sourceOptions.find(
+            (option) => configValueKey(option.data) === value,
+          )
+          onChange(matchedOption ? matchedOption.data : entry.default)
+        }}
       />
     </Form.Item>
   )
+}
+
+function updateModConfigDefault(
+  value: ModInfoRecord['mod_config'],
+  entryName: string,
+  nextDefault: unknown,
+): ModInfoRecord['mod_config'] {
+  const nextOptions = normalizeModConfig(value).map((entry) =>
+    entry.name === entryName ? { ...entry, default: nextDefault } : entry,
+  )
+
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value)
+      if (isRecord(parsed) && 'configuration_options' in parsed) {
+        return JSON.stringify({ ...parsed, configuration_options: nextOptions })
+      }
+    } catch {
+      return nextOptions
+    }
+  }
+
+  if (isRecord(value) && 'configuration_options' in value) {
+    return { ...value, configuration_options: nextOptions }
+  }
+
+  return nextOptions
+}
+
+function configValueKey(value: unknown): string {
+  return JSON.stringify(value ?? null)
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+function getSearchItemWorkshopId(item: ModSearchItem): string {
+  const value = item.modid ?? item.id ?? ''
+  return formatWorkshopId(String(value))
+}
+
+function getSearchItemImageUrl(item: ModSearchItem): string {
+  const img = typeof item.img === 'string' ? item.img.trim() : ''
+  if (img && img !== 'xxx') {
+    return img
+  }
+
+  return '/assets/dst/mods.png'
+}
+
+function formatSearchSubscription(item: ModSearchItem): string {
+  const value = item.subscription ?? item.sub
+  const text = value === undefined || value === null ? '' : String(value).trim()
+  return !text || text.toLowerCase() === 'nan' ? '-' : text
+}
+
+function formatSearchScore(item: ModSearchItem): string {
+  if (typeof item.score === 'number' && Number.isFinite(item.score)) {
+    return String(item.score)
+  }
+
+  const star = item.vote?.star
+  const num = item.vote?.num
+  if (star === undefined || star === null || !Number.isFinite(Number(star))) {
+    return '-'
+  }
+  if (num === undefined || num === null || num === 0) {
+    return String(star)
+  }
+  return `${star}/${num}`
+}
+
+function formatSearchTime(item: ModSearchItem): string {
+  const value = item.time ?? item.created ?? item.last_time
+  if (value === undefined || value === null) {
+    return '-'
+  }
+
+  if (typeof value === 'number') {
+    return formatModUpdatedAt(value)
+  }
+
+  const text = String(value).trim()
+  if (!text || text.toLowerCase() === 'nan') {
+    return '-'
+  }
+
+  if (/^\d+(\.\d+)?$/.test(text)) {
+    return formatModUpdatedAt(text)
+  }
+
+  return text
+}
+
+function buildSearchQueryText(mode: ModSearchMode, value: string): string {
+  const text = value.trim()
+  if (mode === 'all') {
+    return ''
+  }
+  if (mode === 'workshopId') {
+    return formatWorkshopId(text)
+  }
+  return text
+}
+
+function normalizeSearchMeta(
+  response: {
+    data?: ModSearchItem[]
+    page?: number
+    size?: number
+    total?: number
+    totalPage?: number
+  },
+  requestedPage: number,
+  requestedSize: number,
+): ModSearchMeta {
+  const resultCount = response.data?.length ?? 0
+  const page = positiveInteger(response.page, requestedPage)
+  const size = positiveInteger(response.size, requestedSize)
+  const total = Math.max(nonNegativeInteger(response.total, resultCount), resultCount)
+  const totalPage = positiveInteger(response.totalPage, total > 0 ? Math.ceil(total / size) : 0)
+
+  return { page, size, total, totalPage }
+}
+
+function positiveInteger(value: unknown, fallback: number): number {
+  const numberValue = Number(value)
+  if (!Number.isFinite(numberValue) || numberValue <= 0) {
+    return fallback
+  }
+  return Math.trunc(numberValue)
+}
+
+function nonNegativeInteger(value: unknown, fallback: number): number {
+  const numberValue = Number(value)
+  if (!Number.isFinite(numberValue) || numberValue < 0) {
+    return fallback
+  }
+  return Math.trunc(numberValue)
 }
 
 function upsertMod(mods: ModInfoRecord[], nextMod: ModInfoRecord): ModInfoRecord[] {

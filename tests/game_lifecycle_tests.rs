@@ -132,6 +132,65 @@ async fn start_and_stop_level_routes_use_safe_argv_and_legacy_messages() {
 }
 
 #[tokio::test]
+async fn start_level_repairs_missing_server_ini_before_launch() {
+    let runner = FakeCommandRunner::new(vec![
+        CommandOutput::success(Vec::new(), Vec::new()),
+        CommandOutput::success(Vec::new(), Vec::new()),
+    ]);
+    let (app, dir, runner) = test_router(runner).await;
+    let cookie = login(&app).await;
+    write_dst_config(dir.path(), "ClusterRepair", 64);
+    write_level_fixture(dir.path(), "ClusterRepair");
+    let cluster_dir = dir
+        .path()
+        .join(".klei/DoNotStarveTogether")
+        .join("ClusterRepair");
+    fs::write(
+        cluster_dir.join("cluster.ini"),
+        "[GAMEPLAY]\ngame_mode = \n[NETWORK]\ncluster_name = Keep Me\n",
+    )
+    .unwrap();
+    fs::remove_file(cluster_dir.join("Caves/server.ini")).unwrap();
+
+    let started = send(
+        &app,
+        Method::GET,
+        "/api/game/8level/start?levelName=Caves",
+        None,
+        Some(&cookie),
+    )
+    .await;
+    assert_eq!(started.status(), StatusCode::OK);
+
+    let repaired = fs::read_to_string(cluster_dir.join("Caves/server.ini")).unwrap();
+    assert!(repaired.contains("server_port = 10998"));
+    assert!(repaired.contains("is_master = false"));
+    assert!(repaired.contains("name = Caves"));
+    assert!(
+        fs::read_to_string(cluster_dir.join("Caves/leveldataoverride.lua"))
+            .unwrap()
+            .contains("id = \"DST_CAVE\"")
+    );
+    let repaired_cluster = fs::read_to_string(cluster_dir.join("cluster.ini")).unwrap();
+    assert!(repaired_cluster.contains("game_mode = survival"));
+    assert!(repaired_cluster.contains("cluster_name = Keep Me"));
+
+    let calls = runner.calls();
+    assert_eq!(calls.len(), 2);
+    assert_screen_call(
+        &calls[0],
+        "DST_8level_ClusterRepair_Caves",
+        "c_shutdown(true)\n",
+    );
+    assert!(
+        calls[1]
+            .args()
+            .windows(2)
+            .any(|args| args == ["-shard", "Caves"])
+    );
+}
+
+#[tokio::test]
 async fn start_all_and_stop_all_follow_level_index_order() {
     let runner = FakeCommandRunner::new(vec![
         CommandOutput::success(Vec::new(), Vec::new()),

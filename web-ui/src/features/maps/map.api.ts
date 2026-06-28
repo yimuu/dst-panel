@@ -2,16 +2,20 @@ import { apiGet } from '@/shared/api/http'
 import type { ApiEnvelope } from '@/shared/api/types'
 import type { WorldSettingsDefinition } from '@/features/worlds/world-settings-model'
 
-export function getWorldSettingsDefinition(): Promise<WorldSettingsDefinition> {
-  return apiGet<WorldSettingsDefinition>('/api/dst-static/dst_world_setting.json')
+export async function getWorldSettingsDefinition(): Promise<WorldSettingsDefinition> {
+  try {
+    return await apiGet<WorldSettingsDefinition>('/api/dst-static/dst_world_setting.json')
+  } catch {
+    return apiGet<WorldSettingsDefinition>('/misc/dst_world_setting.json')
+  }
 }
 
 export function getWorldgenCustomizationImageUrl(): string {
-  return '/api/dst-static/worldgen_customization.webp'
+  return '/misc/worldgen_customization.webp'
 }
 
 export function getWorldSettingsCustomizationImageUrl(): string {
-  return '/api/dst-static/worldsettings_customization.webp'
+  return '/misc/worldsettings_customization.webp'
 }
 
 export function getMapImageUrl(levelName: string): string {

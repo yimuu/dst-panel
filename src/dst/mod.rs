@@ -260,7 +260,7 @@ pub fn init_cluster_files(root: &Path, cluster_name: &str, token: &str) -> io::R
     Ok(())
 }
 
-fn write_world_files_if_missing(
+pub(crate) fn write_world_files_if_missing(
     cluster_dir: &Path,
     level_name: &str,
     leveldataoverride: &str,

@@ -178,8 +178,13 @@ fn docker_and_install_entrypoints_execute_dst_admin_rust() {
 fn docker_platforms_match_the_release_binary_targets() {
     let linux_dockerfile = repo_file("Dockerfile");
     assert!(
-        linux_dockerfile.contains("FROM --platform=linux/amd64 ubuntu:20.04"),
+        linux_dockerfile.contains("FROM --platform=linux/amd64 ubuntu:24.04"),
         "root Dockerfile should be pinned to linux/amd64 to match the default Linux binary"
+    );
+    assert!(
+        linux_dockerfile.contains("libcurl3t64-gnutls")
+            && linux_dockerfile.contains("libcurl3t64-gnutls:i386"),
+        "root Dockerfile should include both 64-bit DST and 32-bit SteamCMD cURL libraries"
     );
 
     let mac_arm_dockerfile = repo_file("script/docker-build-mac/Dockerfile");

@@ -16,6 +16,8 @@ import { routes } from '@/shared/config/routes'
 
 export interface AdminMenuItem extends MenuDataItem {
   path: string
+  defaultPath?: string
+  routePath?: string
   name: string
   children?: AdminMenuItem[]
 }
@@ -24,20 +26,24 @@ export const adminMenuItems: AdminMenuItem[] = [
   { path: routes.dashboard, name: '统计面板', icon: <DashboardOutlined /> },
   { path: routes.panel, name: '面板操作', icon: <CloudServerOutlined /> },
   {
-    path: routes.clusterIni,
+    path: '/home-group',
+    defaultPath: routes.clusterIni,
     name: '房间设置',
     icon: <HomeOutlined />,
     children: [
+      { path: '/room-settings', routePath: routes.clusterIni, name: '房间设置' },
       { path: routes.adminlist, name: '管理员列表' },
       { path: routes.whitelist, name: '白名单列表' },
       { path: routes.blacklist, name: '黑名单列表' },
     ],
   },
   {
-    path: routes.levels,
+    path: '/levels-group',
+    defaultPath: routes.levels,
     name: '世界设置',
     icon: <ToolOutlined />,
     children: [
+      { path: '/levels-settings', routePath: routes.levels, name: '世界设置' },
       { path: routes.selectorMod, name: '多层选择器' },
       { path: routes.preinstall, name: '世界模板' },
       { path: routes.genMap, name: '预览地图' },
@@ -60,4 +66,47 @@ export function flattenAdminMenuItems(items: AdminMenuItem[] = adminMenuItems): 
   return items.flatMap((item) =>
     item.children ? [item, ...flattenAdminMenuItems(item.children)] : [item],
   )
+}
+
+export function getSelectedMenuKeys(
+  pathname: string,
+  items: AdminMenuItem[] = adminMenuItems,
+): string[] {
+  return flattenAdminMenuItems(items)
+    .filter((item) => (item.routePath ?? item.path) === pathname)
+    .map((item) => item.path)
+}
+
+export function getOpenMenuKeys(pathname: string): string[] {
+  if (pathname.startsWith('/home/')) {
+    return ['/home-group']
+  }
+
+  if (pathname.startsWith('/levels/')) {
+    return ['/levels-group']
+  }
+
+  return []
+}
+
+export function getMenuNavigationPath(
+  item: Pick<AdminMenuItem, 'children' | 'defaultPath' | 'path' | 'routePath'>,
+): string {
+  if (item.routePath) {
+    return item.routePath
+  }
+
+  if (item.children?.length && item.defaultPath) {
+    return item.defaultPath
+  }
+
+  return item.path
+}
+
+export function getGroupedMenuNavigationPath(
+  name: string,
+  items: AdminMenuItem[] = adminMenuItems,
+): string | undefined {
+  const matched = items.find((item) => item.children && item.name === name)
+  return matched ? getMenuNavigationPath(matched) : undefined
 }

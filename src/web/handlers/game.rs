@@ -137,6 +137,7 @@ pub(crate) async fn start_level_handler(
     game::lifecycle::start_level(
         state.command_runner.as_ref(),
         state.process_snapshot_provider.as_ref(),
+        &state.root_path,
         &context,
         &query.level_name,
         state.lifecycle_grace_period,

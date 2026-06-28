@@ -1,5 +1,14 @@
 import { ProCard } from '@ant-design/pro-components'
-import { App as AntApp, Button, Space, Table, Tag, Upload, type UploadProps } from 'antd'
+import {
+  App as AntApp,
+  Button,
+  Popconfirm,
+  Space,
+  Table,
+  Tag,
+  Upload,
+  type UploadProps,
+} from 'antd'
 import {
   CloudDownloadOutlined,
   DeleteOutlined,
@@ -128,14 +137,27 @@ export default function BackupPage() {
           <Button icon={<ReloadOutlined />} onClick={() => void loadBackups()}>
             刷新
           </Button>
-          <Button
-            danger
-            icon={<DeleteOutlined />}
-            loading={actionLoading === 'delete'}
-            onClick={() => void handleDeleteSelected()}
+          <Popconfirm
+            title="确认删除选中的备份"
+            description="删除后无法从面板恢复，请确认已经不再需要。"
+            okText="确认"
+            cancelText="取消"
+            disabled={selectedFileNames.length === 0}
+            onConfirm={() => void handleDeleteSelected()}
           >
-            删除选中
-          </Button>
+            <Button
+              danger
+              icon={<DeleteOutlined />}
+              loading={actionLoading === 'delete'}
+              onClick={() => {
+                if (selectedFileNames.length === 0) {
+                  message.warning('请选择备份文件')
+                }
+              }}
+            >
+              删除选中
+            </Button>
+          </Popconfirm>
         </Space>
       }
     >
@@ -168,13 +190,17 @@ export default function BackupPage() {
             title: '操作',
             render: (_, row) => (
               <Space>
-                <Button
-                  size="small"
-                  loading={actionLoading === `restore-${row.fileName}`}
-                  onClick={() => void handleRestore(row.fileName)}
+                <Popconfirm
+                  title={`确认恢复 ${row.fileName}`}
+                  description="恢复备份会覆盖当前存档，请先确认已创建必要备份。"
+                  okText="确认"
+                  cancelText="取消"
+                  onConfirm={() => void handleRestore(row.fileName)}
                 >
-                  恢复
-                </Button>
+                  <Button size="small" loading={actionLoading === `restore-${row.fileName}`}>
+                    恢复
+                  </Button>
+                </Popconfirm>
                 <Button
                   size="small"
                   icon={<CloudDownloadOutlined />}

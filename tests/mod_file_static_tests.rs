@@ -442,6 +442,81 @@ async fn mod_search_numeric_accepts_real_steam_views_integer() {
 }
 
 #[tokio::test]
+async fn mod_search_numeric_id_without_steam_api_key_returns_manual_candidate() {
+    let (app, _dir, _pool, http) = test_router_without_steam_api_key(Vec::new()).await;
+    let cookie = login(&app).await;
+
+    let response = send(
+        &app,
+        Method::GET,
+        "/api/mod/search?text=123456",
+        None,
+        Some(&cookie),
+    )
+    .await;
+
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = response_json(response).await;
+    assert_eq!(body["data"]["data"][0]["id"], "123456");
+    assert_eq!(body["data"]["data"][0]["modid"], "123456");
+    assert_eq!(body["data"]["data"][0]["name"], "workshop-123456");
+    assert!(http.requests().is_empty());
+}
+
+#[tokio::test]
+async fn mod_subscribe_numeric_id_without_steam_api_key_downloads_modinfo_with_steamcmd() {
+    let command_runner = WritingCommandRunner::new("123456", modinfo_lua("No Key Mod"));
+    let calls = command_runner.clone();
+    let (app, _dir, _pool, _http) =
+        test_router_without_steam_api_key_with_command_runner(Vec::new(), command_runner).await;
+    let cookie = login(&app).await;
+
+    let response = send(
+        &app,
+        Method::GET,
+        "/api/mod/123456?lang=zh",
+        None,
+        Some(&cookie),
+    )
+    .await;
+
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = response_json(response).await;
+    assert_eq!(body["data"]["modid"], "123456");
+    assert_eq!(body["data"]["name"], "123456");
+    assert_eq!(
+        body["data"]["mod_config"]["configuration_options"][0]["name"],
+        "difficulty"
+    );
+    assert_eq!(calls.calls().len(), 1);
+}
+
+#[tokio::test]
+async fn mod_subscribe_without_steam_api_key_saves_empty_config_when_steamcmd_fails() {
+    let command_runner = FakeCommandRunner::new(vec![failed_command_output()]);
+    let calls = command_runner.clone();
+    let (app, _dir, _pool, _http) =
+        test_router_without_steam_api_key_with_command_runner(Vec::new(), command_runner).await;
+    let cookie = login(&app).await;
+
+    let response = send(
+        &app,
+        Method::GET,
+        "/api/mod/123456?lang=zh",
+        None,
+        Some(&cookie),
+    )
+    .await;
+
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = response_json(response).await;
+    assert_eq!(body["data"]["modid"], "123456");
+    assert_eq!(body["data"]["name"], "123456");
+    assert_eq!(body["data"]["mod_config"], json!({}));
+    assert_eq!(calls.calls().len(), 1);
+}
+
+#[tokio::test]
 async fn local_mod_get_creates_legacy_record_without_network() {
     let (app, _dir, _pool, http) = test_router(Vec::new()).await;
     let cookie = login(&app).await;
@@ -535,6 +610,37 @@ async fn steam_mod_get_uses_file_url_zip_modinfo_without_steamcmd() {
 }
 
 #[tokio::test]
+async fn steam_mod_get_trusts_current_steamusercontent_cdn_file_url() {
+    let command_runner = FakeCommandRunner::new(Vec::new());
+    let zip = stored_zip(&[("modinfo.lua", b"name = \"Steam CDN Zip Mod\"")]);
+    let (app, _dir, _pool, http) = test_router_with_command_runner(
+        vec![
+            steam_details_response_with_file_url(
+                "123456",
+                "Steam CDN Detail Mod",
+                "https://cdn.steamusercontent.com/mod.zip",
+            ),
+            HttpResponse::new(200)
+                .header("content-type", "application/zip")
+                .body(zip),
+        ],
+        command_runner.clone(),
+    )
+    .await;
+    let cookie = login(&app).await;
+
+    let response = send(&app, Method::GET, "/api/mod/123456", None, Some(&cookie)).await;
+
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = response_json(response).await;
+    assert_eq!(body["data"]["mod_config"]["name"], "Steam CDN Zip Mod");
+    assert!(command_runner.calls().is_empty());
+    let calls = http.requests();
+    assert_eq!(calls.len(), 2);
+    assert_eq!(calls[1].url, "https://cdn.steamusercontent.com/mod.zip");
+}
+
+#[tokio::test]
 async fn steam_mod_get_falls_back_to_steamcmd_for_untrusted_file_url() {
     let command_runner = WritingCommandRunner::new("123456", modinfo_lua("Fallback SteamCMD Mod"));
     let (app, _dir, _pool, http) = test_router_with_command_runner(
@@ -560,6 +666,26 @@ async fn steam_mod_get_falls_back_to_steamcmd_for_untrusted_file_url() {
 }
 
 #[tokio::test]
+async fn steam_mod_get_saves_metadata_with_empty_config_when_steamcmd_fails() {
+    let command_runner = FakeCommandRunner::new(vec![failed_command_output()]);
+    let (app, _dir, _pool, _http) = test_router_with_command_runner(
+        vec![steam_details_response("123456", "SteamCMD Failure Mod")],
+        command_runner.clone(),
+    )
+    .await;
+    let cookie = login(&app).await;
+
+    let response = send(&app, Method::GET, "/api/mod/123456", None, Some(&cookie)).await;
+
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = response_json(response).await;
+    assert_eq!(body["data"]["modid"], "123456");
+    assert_eq!(body["data"]["name"], "SteamCMD Failure Mod");
+    assert_eq!(body["data"]["mod_config"], json!({}));
+    assert_eq!(command_runner.calls().len(), 1);
+}
+
+#[tokio::test]
 async fn mod_put_redownloads_and_reparses_modinfo_after_cache_delete() {
     let command_runner = WritingCommandRunner::new("123456", modinfo_lua("Redownloaded Mod"));
     let (app, dir, _pool, _http) = test_router_with_command_runner(
@@ -577,6 +703,9 @@ async fn mod_put_redownloads_and_reparses_modinfo_after_cache_delete() {
         .join("mod-download/steamapps/workshop/content/322330/123456");
     fs::create_dir_all(&old_dir).unwrap();
     fs::write(old_dir.join("modinfo.lua"), modinfo_lua("Seed Mod")).unwrap();
+    let steamcmd64 = dir.path().join("steamcmd/linux64/steamcmd");
+    fs::create_dir_all(steamcmd64.parent().unwrap()).unwrap();
+    fs::write(&steamcmd64, "").unwrap();
 
     let seed = send(&app, Method::GET, "/api/mod/123456", None, Some(&cookie)).await;
     assert_eq!(seed.status(), StatusCode::OK);
@@ -591,9 +720,7 @@ async fn mod_put_redownloads_and_reparses_modinfo_after_cache_delete() {
 
     let calls = command_runner.calls();
     assert_eq!(calls.len(), 1);
-    assert!(
-        calls[0].program().ends_with("steamcmd.sh") || calls[0].program().ends_with("steamcmd")
-    );
+    assert!(calls[0].program().ends_with("steamcmd/linux64/steamcmd"));
     assert!(
         calls[0]
             .args()
@@ -1307,6 +1434,42 @@ async fn test_router_with_command_runner<R>(
 where
     R: CommandRunner + 'static,
 {
+    test_router_with_config_and_command_runner(test_config(), http_responses, command_runner).await
+}
+
+async fn test_router_without_steam_api_key(
+    http_responses: Vec<HttpResponse>,
+) -> (Router, TempDir, SqlitePool, FakeHttpClient) {
+    test_router_without_steam_api_key_with_command_runner(
+        http_responses,
+        FakeCommandRunner::new(Vec::new()),
+    )
+    .await
+}
+
+async fn test_router_without_steam_api_key_with_command_runner<R>(
+    http_responses: Vec<HttpResponse>,
+    command_runner: R,
+) -> (Router, TempDir, SqlitePool, FakeHttpClient)
+where
+    R: CommandRunner + 'static,
+{
+    test_router_with_config_and_command_runner(
+        test_config_without_steam_api_key(),
+        http_responses,
+        command_runner,
+    )
+    .await
+}
+
+async fn test_router_with_config_and_command_runner<R>(
+    config: AppConfig,
+    http_responses: Vec<HttpResponse>,
+    command_runner: R,
+) -> (Router, TempDir, SqlitePool, FakeHttpClient)
+where
+    R: CommandRunner + 'static,
+{
     let dir = tempdir().unwrap();
     write_password_file(dir.path());
     write_dst_config(dir.path());
@@ -1314,7 +1477,7 @@ where
     migrate(&pool).await.unwrap();
     let http = FakeHttpClient::new(http_responses);
     let state = AppState::new_with_command_runner_and_http_client(
-        test_config(),
+        config,
         pool.clone(),
         SessionStore::new(),
         dir.path(),
@@ -1391,6 +1554,13 @@ fn test_config() -> AppConfig {
             update_check_interval: 10,
         },
         dst_cli_port: String::new(),
+    }
+}
+
+fn test_config_without_steam_api_key() -> AppConfig {
+    AppConfig {
+        steam_api_key: None,
+        ..test_config()
     }
 }
 

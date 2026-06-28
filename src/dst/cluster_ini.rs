@@ -40,7 +40,7 @@ impl ClusterIni {
     /// Returns Go's defaults from `level.NewClusterIni`.
     pub fn default_for_new_cluster() -> Self {
         Self {
-            game_mode: String::new(),
+            game_mode: "survival".to_owned(),
             max_players: 8,
             pvp: false,
             pause_when_nobody: true,
@@ -72,7 +72,11 @@ impl ClusterIni {
     pub fn from_contents(contents: &str) -> Self {
         let values = parse_ini_values(contents);
         let mut config = Self::default_for_new_cluster();
-        config.game_mode = value(&values, "game_mode");
+        config.game_mode = values
+            .get("game_mode")
+            .filter(|value| !value.trim().is_empty())
+            .cloned()
+            .unwrap_or_else(|| "survival".to_owned());
         config.max_players = parse_u64(values.get("max_players"), 8);
         config.pvp = parse_bool(values.get("pvp"), false);
         config.pause_when_nobody = parse_bool(values.get("pause_when_empty"), true);
@@ -191,4 +195,19 @@ pub(crate) fn parse_ini_values(contents: &str) -> HashMap<String, String> {
 
 fn value(values: &HashMap<String, String>, key: &str) -> String {
     values.get(key).cloned().unwrap_or_default()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ClusterIni;
+
+    #[test]
+    fn cluster_ini_defaults_empty_game_mode_to_survival() {
+        assert_eq!(ClusterIni::default_for_new_cluster().game_mode, "survival");
+        assert_eq!(ClusterIni::from_contents("").game_mode, "survival");
+        assert_eq!(
+            ClusterIni::from_contents("[GAMEPLAY]\ngame_mode = \n").game_mode,
+            "survival"
+        );
+    }
 }

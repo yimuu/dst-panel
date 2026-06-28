@@ -19,6 +19,7 @@ data_mod="${DATA_DIR}/mod"
 password_file="${DATA_DIR}/password.txt"
 config_file="${DATA_DIR}/config.yml"
 dst_config_file="${DATA_DIR}/dst_config"
+go_steam_api_key="73DF9F781D195DFD3D19DED1CB72EEE6"
 
 # ===== 基础目录 =====
 mkdir -p "$DATA_DIR"
@@ -35,6 +36,11 @@ if [ ! -f "$config_file" ]; then
   sed -i 's|^dataDir:.*|dataDir: "."|' "$config_file"
 fi
 
+if ! grep -q '^steamAPIKey:' "$config_file"; then
+  echo "Adding default Steam API key to ARM64 Docker runtime config..."
+  sed -i "/^database:/a steamAPIKey: \"${go_steam_api_key}\"" "$config_file"
+fi
+
 if [ ! -f "$dst_config_file" ]; then
   echo "Creating ARM64 Docker DST config..."
   cp "$APP_DIR/dst_config" "$dst_config_file"
@@ -43,10 +49,12 @@ fi
 # ===== 静态资源 =====
 # 每次启动都刷新镜像内置资源，避免用户升级镜像后继续使用旧版前端。
 echo "Refreshing packaged frontend assets..."
+rm -rf "${DATA_DIR:?}/dist"
 mkdir -p "$DATA_DIR/dist"
 cp -a "$APP_DIR/dist/." "$DATA_DIR/dist/"
 
 echo "Refreshing packaged static assets..."
+rm -rf "${DATA_DIR:?}/static"
 mkdir -p "$DATA_DIR/static"
 cp -a "$APP_DIR/static/." "$DATA_DIR/static/"
 
@@ -74,6 +82,10 @@ ln -sf "$data_klei" /root/.klei/DoNotStarveTogether
 # ===== x86_64 运行库 =====
 # DST 服务端仍是 x86_64 程序，ARM64 容器通过 Box64 运行它。
 echo "Ensuring x86_64 runtime libraries are available..."
+# Ubuntu ARM images use ports.ubuntu.com for native packages. After enabling
+# amd64, keep those existing sources arm64-only so apt does not request amd64
+# indexes from ports.ubuntu.com.
+sed -i 's|^deb http://ports.ubuntu.com|deb [arch=arm64] http://ports.ubuntu.com|' /etc/apt/sources.list
 dpkg --add-architecture amd64
 cat > /etc/apt/sources.list.d/amd64.list <<EOF
 deb [arch=amd64] http://archive.ubuntu.com/ubuntu jammy main universe multiverse restricted

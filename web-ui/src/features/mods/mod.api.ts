@@ -25,12 +25,18 @@ export interface ModInfoRecord {
 export interface ModSearchItem {
   author?: string
   created?: number
+  id?: string
   img?: string
-  modid: string
+  modid?: string
   name?: string
   score?: number
+  sub?: number | string
   subscription?: string
-  time?: string
+  time?: number | string
+  vote?: {
+    num?: number
+    star?: number
+  }
   [key: string]: unknown
 }
 
@@ -61,7 +67,10 @@ export function getMods(): Promise<ApiEnvelope<ModInfoRecord[]>> {
 }
 
 export function saveModInfo(record: ModInfoRecord): Promise<ApiEnvelope<ModInfoRecord>> {
-  return apiPost<ApiEnvelope<ModInfoRecord>, ModInfoRecord>('/api/mod/modinfo', record)
+  return apiPost<ApiEnvelope<ModInfoRecord>, ModInfoRecord>(
+    '/api/mod/modinfo',
+    toRawModInfoPayload(record),
+  )
 }
 
 export function updateAllModInfo(lang = 'zh'): Promise<ApiEnvelope<unknown>> {
@@ -122,4 +131,14 @@ export function deleteUgcMod(levelName: string, workshopId: string): Promise<Api
       workshopId: formatWorkshopId(workshopId),
     })}`,
   )
+}
+
+function toRawModInfoPayload(record: ModInfoRecord): ModInfoRecord {
+  return {
+    ...record,
+    mod_config:
+      typeof record.mod_config === 'string'
+        ? record.mod_config
+        : JSON.stringify(record.mod_config ?? {}),
+  }
 }

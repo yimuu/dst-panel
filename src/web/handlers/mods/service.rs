@@ -16,7 +16,10 @@ use crate::{
 };
 
 use super::{
-    file_ops::{mod_config_from_detail_source, mod_config_from_existing_files},
+    file_ops::{
+        STEAMCMD_MOD_DOWNLOAD_FAILED, mod_config_from_detail_source,
+        mod_config_from_existing_files, mod_config_from_existing_or_steamcmd,
+    },
     lua_config::parse_mod_config,
     steam_api::{
         STEAM_DETAIL_LANG, SteamDetail, author_url, fetch_steam_details, image_with_suffix,
@@ -40,7 +43,22 @@ pub(super) async fn subscribe_mod_by_id(
             .map_err(|error| repository_error("create local mod info", error));
     }
 
-    let mut details = fetch_steam_details(state, &[mod_id], STEAM_DETAIL_LANG).await?;
+    let mut details = match fetch_steam_details(state, &[mod_id], STEAM_DETAIL_LANG).await {
+        Ok(details) => details,
+        Err(AppError::BadRequest(message)) if message == "steam API key is not configured" => {
+            let config = DstConfig::load(&state.root_path)?;
+            let mod_config = recover_subscribe_mod_config(
+                mod_config_from_existing_or_steamcmd(state, &config, lang, mod_id).await,
+                mod_id,
+            )?;
+            let record = local_mod_record(mod_id, mod_config);
+            return repository
+                .upsert_by_modid(ModInfoInput::from(&record))
+                .await
+                .map_err(|error| repository_error("save steamcmd-only mod info", error));
+        }
+        Err(error) => return Err(error),
+    };
     let Some(detail) = details.pop() else {
         return Err(AppError::bad_request("steam mod details not found"));
     };
@@ -54,12 +72,29 @@ pub(super) async fn subscribe_mod_by_id(
     }
 
     let config = DstConfig::load(&state.root_path)?;
-    let mod_config = mod_config_from_detail_source(state, &config, lang, mod_id, &detail).await?;
+    let mod_config = recover_subscribe_mod_config(
+        mod_config_from_detail_source(state, &config, lang, mod_id, &detail).await,
+        mod_id,
+    )?;
     let record = mod_record_from_detail(&detail, mod_config);
     repository
         .upsert_by_modid(ModInfoInput::from(&record))
         .await
         .map_err(|error| repository_error("save steam mod info", error))
+}
+
+fn recover_subscribe_mod_config(result: AppResult<String>, mod_id: &str) -> AppResult<String> {
+    match result {
+        Ok(mod_config) => Ok(mod_config),
+        Err(AppError::BadRequest(message)) if message == STEAMCMD_MOD_DOWNLOAD_FAILED => {
+            tracing::warn!(
+                modid = %mod_id,
+                "SteamCMD failed during initial subscribe; saving metadata with empty mod_config"
+            );
+            Ok("{}".to_owned())
+        }
+        Err(error) => Err(error),
+    }
 }
 
 pub(super) fn local_mod_record(mod_id: &str, mod_config: String) -> ModInfoRecord {

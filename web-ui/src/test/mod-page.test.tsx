@@ -18,6 +18,10 @@ const apiMocks = vi.hoisted(() => ({
   uploadModInfoFile: vi.fn(),
 }))
 
+const gameApiMocks = vi.hoisted(() => ({
+  saveGameConfig: vi.fn(),
+}))
+
 vi.mock('@/features/mods/mod.api', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/features/mods/mod.api')>()
   return {
@@ -34,6 +38,14 @@ vi.mock('@/features/mods/mod.api', async (importOriginal) => {
   }
 })
 
+vi.mock('@/features/game/game.api', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/features/game/game.api')>()
+  return {
+    ...actual,
+    saveGameConfig: gameApiMocks.saveGameConfig,
+  }
+})
+
 const modList: ModInfoRecord[] = [
   {
     ID: 1,
@@ -45,26 +57,35 @@ const modList: ModInfoRecord[] = [
     file_url: '',
     img: '/global.jpg',
     last_time: 1712828023,
-    mod_config: [
-      {
-        name: 'Player Indicators',
-        label: 'Player Indicators',
-        default: 'scoreboard',
-        options: [
-          { description: 'Scoreboard', data: 'scoreboard' },
-          { description: 'Always', data: 'always' },
-        ],
-      },
-      {
-        name: 'Player Icons',
-        label: 'Player Icons',
-        default: true,
-        options: [
-          { description: 'Show', data: true },
-          { description: 'Hide', data: false },
-        ],
-      },
-    ],
+    mod_config: {
+      name: 'Global Positions',
+      configuration_options: [
+        {
+          name: 'Player Indicators',
+          label: 'Player Indicators',
+          default: 'scoreboard',
+          options: [
+            { description: 'Scoreboard', data: 'scoreboard' },
+            { description: 'Always', data: 'always' },
+          ],
+        },
+        {
+          name: 'Player Icons',
+          label: 'Player Icons',
+          default: true,
+          options: [
+            { description: 'Show', data: true },
+            { description: 'Hide', data: false },
+          ],
+        },
+        {
+          name: 'HUDSCALEFACTOR',
+          label: 'HUD Scale',
+          default: 100,
+          options: 'hud_scale_options',
+        },
+      ],
+    },
     modid: '378160973',
     name: 'Global Positions',
     update: false,
@@ -116,6 +137,10 @@ function renderWithAntApp(ui: ReactElement) {
   )
 }
 
+async function confirmPopconfirm() {
+  fireEvent.click(await screen.findByRole('button', { name: /确\s*认/ }))
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
   apiMocks.getMods.mockResolvedValue({ code: 200, msg: 'success', data: modList })
@@ -139,6 +164,7 @@ beforeEach(() => {
   apiMocks.updateMod.mockResolvedValue({ code: 200, msg: 'success', data: modList[0] })
   apiMocks.deleteMod.mockResolvedValue({ code: 200, msg: 'success', data: null })
   apiMocks.uploadModInfoFile.mockResolvedValue({ code: 200, msg: 'success', data: null })
+  gameApiMocks.saveGameConfig.mockResolvedValue({ code: 200, msg: 'success', data: null })
 })
 
 describe('mod page', () => {
@@ -161,6 +187,7 @@ describe('mod page', () => {
 
     const globalRow = screen.getByTestId('mod-row-378160973')
     fireEvent.click(within(globalRow).getByRole('button', { name: /删除/ }))
+    await confirmPopconfirm()
     await waitFor(() => {
       expect(apiMocks.deleteMod).toHaveBeenCalledWith('378160973')
     })
@@ -168,6 +195,22 @@ describe('mod page', () => {
     fireEvent.click(screen.getByRole('button', { name: /全部更新/ }))
     await waitFor(() => {
       expect(apiMocks.updateAllModInfo).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  it('shows per-mod option and update actions beside each mod row', async () => {
+    renderWithAntApp(<ModPage />)
+
+    const globalRow = await screen.findByTestId('mod-row-378160973')
+    expect(within(globalRow).getByRole('button', { name: /选\s*项/ })).toBeInTheDocument()
+    expect(within(globalRow).getByRole('button', { name: /更\s*新/ })).toBeInTheDocument()
+
+    fireEvent.click(within(globalRow).getByRole('button', { name: /选\s*项/ }))
+    expect(await screen.findByText('Player Indicators')).toBeInTheDocument()
+
+    fireEvent.click(within(globalRow).getByRole('button', { name: /更\s*新/ }))
+    await waitFor(() => {
+      expect(apiMocks.updateMod).toHaveBeenCalledWith('378160973')
     })
   })
 
@@ -188,11 +231,154 @@ describe('mod page', () => {
     })
   })
 
-  it('opens the option drawer with parsed mod config options', async () => {
+  it('loads subscription results by default and paginates them', async () => {
+    apiMocks.searchMods.mockResolvedValueOnce({
+      code: 200,
+      msg: 'success',
+      data: {
+        ...searchResult,
+        total: 21,
+        totalPage: 3,
+      },
+    })
+    apiMocks.searchMods.mockResolvedValueOnce({
+      code: 200,
+      msg: 'success',
+      data: {
+        ...searchResult,
+        page: 2,
+        total: 21,
+        totalPage: 3,
+        data: [{ ...searchResult.data[0], modid: '999999', name: 'Second Page Mod' }],
+      },
+    })
+
+    renderWithAntApp(<ModPage />)
+    fireEvent.click(screen.getByRole('tab', { name: '模组订阅' }))
+
+    await waitFor(() => {
+      expect(apiMocks.searchMods).toHaveBeenCalledWith('', 1, 12)
+    })
+
+    fireEvent.click(screen.getByTitle('2'))
+    expect(await screen.findByText('Second Page Mod')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(apiMocks.searchMods).toHaveBeenCalledWith('', 2, 12)
+    })
+  })
+
+  it('supports searching subscriptions by normalized workshop id', async () => {
+    renderWithAntApp(<ModPage />)
+
+    fireEvent.click(screen.getByRole('tab', { name: '模组订阅' }))
+    await waitFor(() => {
+      expect(apiMocks.searchMods).toHaveBeenCalledWith('', 1, 12)
+    })
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: '查询方式' }))
+    fireEvent.click(await screen.findByText('创意工坊ID'))
+    fireEvent.change(screen.getByPlaceholderText('输入创意工坊 ID 或关键词'), {
+      target: { value: 'workshop-378160973' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /搜索/ }))
+
+    await waitFor(() => {
+      expect(apiMocks.searchMods).toHaveBeenCalledWith('378160973', 1, 12)
+    })
+  })
+
+  it('formats backend subscription metadata without NaN placeholders', async () => {
+    apiMocks.searchMods.mockResolvedValueOnce({
+      code: 200,
+      msg: 'success',
+      data: {
+        page: 1,
+        size: 12,
+        total: 1,
+        totalPage: 1,
+        data: [
+          {
+            img: 'xxx',
+            modid: '112233',
+            name: 'Metadata Mod',
+            subscription: 'NaN',
+            time: 1712828023,
+          },
+        ],
+      },
+    })
+
+    renderWithAntApp(<ModPage />)
+    fireEvent.click(screen.getByRole('tab', { name: '模组订阅' }))
+
+    expect(await screen.findByText('Metadata Mod')).toBeInTheDocument()
+    expect(screen.getByText('订阅: -')).toBeInTheDocument()
+    expect(screen.queryByText(/NaN/)).not.toBeInTheDocument()
+    expect(screen.getAllByText(/2024/).length).toBeGreaterThan(0)
+  })
+
+  it('subscribes search results that use the backend id field', async () => {
+    apiMocks.searchMods
+      .mockResolvedValueOnce({
+        code: 200,
+        msg: 'success',
+        data: { ...searchResult, data: [], total: 0, totalPage: 0 },
+      })
+      .mockResolvedValueOnce({
+        code: 200,
+        msg: 'success',
+        data: {
+          page: 1,
+          size: 10,
+          total: 1,
+          totalPage: 1,
+          data: [
+            {
+              id: '654321',
+              img: '/backend.jpg',
+              name: 'Backend Search Mod',
+              sub: 42,
+              vote: { star: 4, num: 7 },
+            },
+          ],
+        },
+      })
+    renderWithAntApp(<ModPage />)
+
+    fireEvent.click(screen.getByRole('tab', { name: '模组订阅' }))
+    await waitFor(() => {
+      expect(apiMocks.searchMods).toHaveBeenCalledWith('', 1, 12)
+    })
+    fireEvent.change(screen.getByPlaceholderText('输入创意工坊 ID 或关键词'), {
+      target: { value: 'backend' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /搜索/ }))
+
+    expect(await screen.findByText('订阅: 42')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /订\s*阅/ }))
+    await waitFor(() => {
+      expect(apiMocks.subscribeMod).toHaveBeenCalledWith('654321')
+    })
+  })
+
+  it('saves enabled mods as modoverrides.lua through game config', async () => {
     renderWithAntApp(<ModPage />)
 
     expect((await screen.findAllByText('Global Positions')).length).toBeGreaterThan(0)
-    fireEvent.click(screen.getByRole('button', { name: /选\s*项/ }))
+    fireEvent.click(screen.getByRole('button', { name: /保存到森林/ }))
+
+    await waitFor(() => {
+      expect(gameApiMocks.saveGameConfig).toHaveBeenCalledTimes(1)
+    })
+    const payload = gameApiMocks.saveGameConfig.mock.calls[0][0]
+    expect(payload.modData).toContain('["workshop-378160973"]')
+    expect(payload.modData).toContain('["workshop-345692228"]')
+  })
+
+  it('opens the option drawer with parsed mod config options', async () => {
+    renderWithAntApp(<ModPage />)
+
+    const globalRow = await screen.findByTestId('mod-row-378160973')
+    fireEvent.click(within(globalRow).getByRole('button', { name: /选\s*项/ }))
 
     expect(await screen.findByText('Player Indicators')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /保存偏好/ })).toBeInTheDocument()

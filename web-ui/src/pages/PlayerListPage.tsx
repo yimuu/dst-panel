@@ -1,5 +1,5 @@
 import { ProCard } from '@ant-design/pro-components'
-import { App as AntApp, Button, Input, Space, Table, Tag } from 'antd'
+import { App as AntApp, Button, Input, Popconfirm, Space, Table, Tag } from 'antd'
 import { DeleteOutlined, ReloadOutlined, UserAddOutlined } from '@ant-design/icons'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
@@ -117,9 +117,17 @@ export default function PlayerListPage({ kind }: PlayerListPageProps) {
               title: '操作',
               width: 140,
               render: (_, row) => (
-                <Button danger icon={<DeleteOutlined />} onClick={() => void removeEntry(row.kuId)}>
-                  删除
-                </Button>
+                <Popconfirm
+                  title={`确认删除 ${row.kuId}`}
+                  description={`将从${title}中移除该玩家。`}
+                  okText="确认"
+                  cancelText="取消"
+                  onConfirm={() => void removeEntry(row.kuId)}
+                >
+                  <Button danger icon={<DeleteOutlined />}>
+                    删除
+                  </Button>
+                </Popconfirm>
               ),
             },
           ]}

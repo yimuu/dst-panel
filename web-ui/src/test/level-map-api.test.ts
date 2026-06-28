@@ -50,7 +50,16 @@ describe('level and map api contracts', () => {
     const world: WorldLevel = {
       levelName: '森林',
       uuid: 'Master',
-      serverini: '[NETWORK]',
+      is_master: true,
+      server_ini: {
+        server_port: 11000,
+        is_master: true,
+        name: 'Master',
+        id: 1,
+        encode_user_path: true,
+        authentication_port: 8766,
+        master_server_port: 27016,
+      },
       leveldataoverride: 'return {}',
       modoverrides: 'return {}',
     }
@@ -88,9 +97,23 @@ describe('level and map api contracts', () => {
       '/api/game/preinstall?name=%E6%A0%87%E5%87%86%E4%B8%96%E7%95%8C',
     )
     expect(getMapImageUrl('Caves')).toBe('/api/dst/map/image?levelName=Caves')
-    expect(getWorldgenCustomizationImageUrl()).toBe('/api/dst-static/worldgen_customization.webp')
-    expect(getWorldSettingsCustomizationImageUrl()).toBe(
-      '/api/dst-static/worldsettings_customization.webp',
-    )
+    expect(getWorldgenCustomizationImageUrl()).toBe('/misc/worldgen_customization.webp')
+    expect(getWorldSettingsCustomizationImageUrl()).toBe('/misc/worldsettings_customization.webp')
+  })
+
+  it('falls back to bundled world settings when dst-static proxy fails', async () => {
+    const requests: AxiosRequestConfig[] = []
+    api.defaults.adapter = async (config) => {
+      requests.push(config)
+      if (requests.length === 1) {
+        throw new Error('network error')
+      }
+      return mockApiResponse({ zh: { forest: {} } })
+    }
+
+    await expect(getWorldSettingsDefinition()).resolves.toEqual({ zh: { forest: {} } })
+
+    expect(requestAt(requests, 0).url).toBe('/api/dst-static/dst_world_setting.json')
+    expect(requestAt(requests, 1).url).toBe('/misc/dst_world_setting.json')
   })
 })

@@ -276,6 +276,36 @@ async fn map_generation_writes_png_bytes_to_legacy_jpg_filename_and_image_stream
 }
 
 #[tokio::test]
+async fn map_generation_downscales_real_world_sized_session_maps() {
+    let (app, dir) = test_router().await;
+    let cookie = login(&app).await;
+    let cluster_dir = write_cluster_fixture(dir.path(), "ClusterMapGenLarge");
+    write_session_fixture(
+        &cluster_dir,
+        "Master",
+        "session-map",
+        "height=518\nwidth=518\ntiles=\"AQ==\"",
+    );
+
+    let response = send(
+        &app,
+        Method::GET,
+        "/api/dst/map/gen?levelName=Master",
+        None,
+        Some(&cookie),
+    )
+    .await;
+
+    assert_eq!(response.status(), StatusCode::OK);
+    let generated = fs::read(cluster_dir.join("dst_map_Master.jpg")).unwrap();
+    assert!(generated.starts_with(b"\x89PNG\r\n\x1a\n"));
+    let width = u32::from_be_bytes(generated[16..20].try_into().unwrap());
+    let height = u32::from_be_bytes(generated[20..24].try_into().unwrap());
+    assert!(width <= 2048, "generated width was {width}");
+    assert!(height <= 2048, "generated height was {height}");
+}
+
+#[tokio::test]
 async fn map_routes_preserve_legacy_missing_query_messages() {
     let (app, _dir) = test_router().await;
     let cookie = login(&app).await;

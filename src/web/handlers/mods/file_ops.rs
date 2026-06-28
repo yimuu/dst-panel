@@ -28,6 +28,7 @@ use crate::{
 use super::{lua_config::mod_config_from_lua_source, steam_api::SteamDetail};
 
 const TRUSTED_FILE_URL_HOSTS: &[&str] = &[
+    "cdn.steamusercontent.com",
     "steamusercontent-a.akamaihd.net",
     "steamuserimages-a.akamaihd.net",
     "steamcdn-a.akamaihd.net",
@@ -35,6 +36,7 @@ const TRUSTED_FILE_URL_HOSTS: &[&str] = &[
     "shared.cloudflare.steamstatic.com",
 ];
 pub(super) const MAX_MODINFO_BYTES: usize = 1024 * 1024;
+pub(super) const STEAMCMD_MOD_DOWNLOAD_FAILED: &str = "steamcmd mod download failed";
 const STEAMCMD_MOD_DOWNLOAD_TIMEOUT: Duration = Duration::from_secs(10 * 60);
 const STEAMCMD_MOD_DOWNLOAD_OUTPUT_LIMIT: usize = 64 * 1024;
 pub(super) fn mod_config_from_existing_files(
@@ -49,7 +51,7 @@ pub(super) fn mod_config_from_existing_files(
     )
 }
 
-async fn mod_config_from_existing_or_steamcmd(
+pub(super) async fn mod_config_from_existing_or_steamcmd(
     state: &AppState,
     config: &DstConfig,
     lang: &str,
@@ -273,7 +275,7 @@ async fn download_mod_with_steamcmd(
     tracing::info!(modid = %mod_id, program = %program.display(), "downloading workshop mod with SteamCMD");
     let output = state.command_runner.run(spec).await.map_err(|error| {
         tracing::warn!(modid = %mod_id, error = %error, "SteamCMD mod download failed");
-        AppError::bad_request("steamcmd mod download failed")
+        AppError::bad_request(STEAMCMD_MOD_DOWNLOAD_FAILED)
     })?;
     if output.timed_out || output.status_code != Some(0) {
         tracing::warn!(
@@ -282,7 +284,7 @@ async fn download_mod_with_steamcmd(
             timed_out = output.timed_out,
             "SteamCMD mod download exited unsuccessfully"
         );
-        return Err(AppError::bad_request("steamcmd mod download failed"));
+        return Err(AppError::bad_request(STEAMCMD_MOD_DOWNLOAD_FAILED));
     }
     tracing::info!(
         modid = %mod_id,
@@ -388,6 +390,8 @@ fn steamcmd_program(config: &DstConfig) -> PathBuf {
     let unix_program = steamcmd_dir.join("steamcmd");
     if unix_program.exists() {
         unix_program
+    } else if steamcmd_dir.join("linux64").join("steamcmd").exists() {
+        steamcmd_dir.join("linux64").join("steamcmd")
     } else {
         steamcmd_dir.join("steamcmd.sh")
     }
