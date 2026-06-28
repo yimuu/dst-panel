@@ -140,8 +140,8 @@ fn docker_and_install_entrypoints_execute_dst_admin_rust() {
     let checked_files = [
         "Dockerfile",
         "docker-entrypoint.sh",
-        "script/docker-build-mac/Dockerfile",
-        "script/docker-build-mac/docker-entrypoint.sh",
+        "scripts/docker-build-mac/Dockerfile",
+        "scripts/docker-build-mac/docker-entrypoint.sh",
         "static/script/dst-go.sh",
         "build_linux.sh",
         "build_window.sh",
@@ -187,18 +187,13 @@ fn docker_platforms_match_the_release_binary_targets() {
         "root Dockerfile should include both 64-bit DST and 32-bit SteamCMD cURL libraries"
     );
 
-    let mac_arm_dockerfile = repo_file("script/docker-build-mac/Dockerfile");
+    let mac_arm_dockerfile = repo_file("scripts/docker-build-mac/Dockerfile");
     assert!(
         mac_arm_dockerfile.contains("FROM --platform=linux/arm64 ubuntu:22.04"),
         "mac arm Dockerfile should be pinned to linux/arm64"
     );
-    let mac_arm_release_dockerfile = repo_file("scripts/docker-build-mac/Dockerfile");
-    assert!(
-        mac_arm_release_dockerfile.contains("FROM --platform=linux/arm64 ubuntu:22.04"),
-        "release mac arm Dockerfile should be pinned to linux/arm64"
-    );
 
-    let mac_arm_notes = repo_file("script/docker-build-mac/dst-mac-arm64-env-install.md");
+    let mac_arm_notes = repo_file("scripts/docker-build-mac/dst-mac-arm64-env-install.md");
     assert!(
         mac_arm_notes.contains("RUST_TARGET=aarch64-unknown-linux-gnu ./build_linux.sh"),
         "mac arm Docker docs should explain how to build a matching Rust binary"
@@ -410,63 +405,67 @@ fn docker_dst_config_uses_data_volume_for_klei_and_game_paths() {
 
 #[test]
 fn mac_arm_docker_release_uses_root_context_and_data_volume() {
-    for base in ["script/docker-build-mac", "scripts/docker-build-mac"] {
-        let dockerfile = repo_file(&format!("{base}/Dockerfile"));
-        assert!(
-            dockerfile.contains("FROM --platform=linux/arm64 ubuntu:22.04"),
-            "{base}/Dockerfile should pin the ARM64 image platform"
-        );
-        assert!(
-            dockerfile.contains("VOLUME [\"/data\"]"),
-            "{base}/Dockerfile should declare the persistent data volume"
-        );
-        assert!(
-            dockerfile.contains(&format!(
-                "COPY {base}/docker-entrypoint.sh /app/docker-entrypoint.sh"
-            )),
-            "{base}/Dockerfile should copy its entrypoint from a repository-root build context"
-        );
-        assert!(
-            dockerfile.contains(&format!("COPY {base}/docker_dst_config /app/dst_config")),
-            "{base}/Dockerfile should copy its DST config from a repository-root build context"
-        );
-        assert_dockerfile_builds_frontend(&format!("{base}/Dockerfile"), &dockerfile);
-        assert!(dockerfile.contains("COPY static /app/static"));
+    assert!(
+        !repo_path("script").exists(),
+        "use scripts/ for repository helper scripts; root script/ is a legacy duplicate"
+    );
 
-        let entrypoint = repo_file(&format!("{base}/docker-entrypoint.sh"));
-        assert!(entrypoint.contains("set -e"));
-        assert!(entrypoint.contains("DATA_DIR=\"/data\""));
-        assert!(entrypoint.contains("APP_DIR=\"/app\""));
-        assert!(entrypoint.contains("dataDir: \".\""));
-        assert!(entrypoint.contains("cp -a \"$APP_DIR/dist/.\" \"$DATA_DIR/dist/\""));
-        assert!(entrypoint.contains("cp -a \"$APP_DIR/static/.\" \"$DATA_DIR/static/\""));
-        assert!(entrypoint.contains("-dir \"$data_dst_server\""));
-        assert!(entrypoint.contains("cd \"$DATA_DIR\""));
-        assert!(entrypoint.contains("exec \"$APP_DIR/dst-admin-rust\""));
-        assert_no_legacy_docker_paths(&format!("{base}/docker-entrypoint.sh"), &entrypoint);
+    let base = "scripts/docker-build-mac";
+    let dockerfile = repo_file(&format!("{base}/Dockerfile"));
+    assert!(
+        dockerfile.contains("FROM --platform=linux/arm64 ubuntu:22.04"),
+        "{base}/Dockerfile should pin the ARM64 image platform"
+    );
+    assert!(
+        dockerfile.contains("VOLUME [\"/data\"]"),
+        "{base}/Dockerfile should declare the persistent data volume"
+    );
+    assert!(
+        dockerfile.contains(&format!(
+            "COPY {base}/docker-entrypoint.sh /app/docker-entrypoint.sh"
+        )),
+        "{base}/Dockerfile should copy its entrypoint from a repository-root build context"
+    );
+    assert!(
+        dockerfile.contains(&format!("COPY {base}/docker_dst_config /app/dst_config")),
+        "{base}/Dockerfile should copy its DST config from a repository-root build context"
+    );
+    assert_dockerfile_builds_frontend(&format!("{base}/Dockerfile"), &dockerfile);
+    assert!(dockerfile.contains("COPY static /app/static"));
 
-        let config = repo_file(&format!("{base}/docker_dst_config"));
-        for expected in [
-            "steamcmd=/data/steamcmd",
-            "force_install_dir=/data/dst-dedicated-server",
-            "backup=/data/backup",
-            "mod_download_path=/data/mod",
-            "persistent_storage_root=/data",
-            "conf_dir=klei",
-            "bin=2664",
-        ] {
-            assert!(
-                config.contains(expected),
-                "{base}/docker_dst_config missing {expected}"
-            );
-        }
-        assert_no_legacy_docker_paths(&format!("{base}/docker_dst_config"), &config);
+    let entrypoint = repo_file(&format!("{base}/docker-entrypoint.sh"));
+    assert!(entrypoint.contains("set -e"));
+    assert!(entrypoint.contains("DATA_DIR=\"/data\""));
+    assert!(entrypoint.contains("APP_DIR=\"/app\""));
+    assert!(entrypoint.contains("dataDir: \".\""));
+    assert!(entrypoint.contains("cp -a \"$APP_DIR/dist/.\" \"$DATA_DIR/dist/\""));
+    assert!(entrypoint.contains("cp -a \"$APP_DIR/static/.\" \"$DATA_DIR/static/\""));
+    assert!(entrypoint.contains("-dir \"$data_dst_server\""));
+    assert!(entrypoint.contains("cd \"$DATA_DIR\""));
+    assert!(entrypoint.contains("exec \"$APP_DIR/dst-admin-rust\""));
+    assert_no_legacy_docker_paths(&format!("{base}/docker-entrypoint.sh"), &entrypoint);
 
-        let notes = repo_file(&format!("{base}/dst-mac-arm64-env-install.md"));
-        assert!(notes.contains("RUST_TARGET=aarch64-unknown-linux-gnu ./build_linux.sh"));
-        assert!(notes.contains("-dir /data/dst-dedicated-server"));
-        assert_no_legacy_docker_paths(&format!("{base}/dst-mac-arm64-env-install.md"), &notes);
+    let config = repo_file(&format!("{base}/docker_dst_config"));
+    for expected in [
+        "steamcmd=/data/steamcmd",
+        "force_install_dir=/data/dst-dedicated-server",
+        "backup=/data/backup",
+        "mod_download_path=/data/mod",
+        "persistent_storage_root=/data",
+        "conf_dir=klei",
+        "bin=2664",
+    ] {
+        assert!(
+            config.contains(expected),
+            "{base}/docker_dst_config missing {expected}"
+        );
     }
+    assert_no_legacy_docker_paths(&format!("{base}/docker_dst_config"), &config);
+
+    let notes = repo_file(&format!("{base}/dst-mac-arm64-env-install.md"));
+    assert!(notes.contains("RUST_TARGET=aarch64-unknown-linux-gnu ./build_linux.sh"));
+    assert!(notes.contains("-dir /data/dst-dedicated-server"));
+    assert_no_legacy_docker_paths(&format!("{base}/dst-mac-arm64-env-install.md"), &notes);
 
     let readme = repo_file("scripts/docker-build-mac/README.md");
     assert!(readme.contains(
