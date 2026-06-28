@@ -35,30 +35,24 @@ fn assert_no_legacy_docker_paths(label: &str, contents: &str) {
     }
 }
 
-fn assert_dockerfile_builds_frontend(path: &str, dockerfile: &str) {
+fn assert_dockerfile_uses_ci_frontend_artifacts(path: &str, dockerfile: &str) {
+    for forbidden in [
+        "FROM node:24-bookworm-slim AS frontend-build",
+        "WORKDIR /app/web-ui",
+        "COPY web-ui/package.json web-ui/package-lock.json /app/web-ui/",
+        "RUN npm ci",
+        "COPY web-ui /app/web-ui",
+        "RUN npm run build",
+        "COPY --from=frontend-build /app/web-ui/dist /app/dist",
+    ] {
+        assert!(
+            !dockerfile.contains(forbidden),
+            "{path} should not build frontend assets inside the Docker image: {forbidden}"
+        );
+    }
     assert!(
-        dockerfile.contains("FROM node:24-bookworm-slim AS frontend-build"),
-        "{path} should build frontend assets in a dedicated Node stage"
-    );
-    assert!(
-        dockerfile.contains("COPY web-ui/package.json web-ui/package-lock.json /app/web-ui/"),
-        "{path} should copy frontend package metadata before npm ci"
-    );
-    assert!(
-        dockerfile.contains("RUN npm ci"),
-        "{path} should install frontend dependencies from package-lock.json"
-    );
-    assert!(
-        dockerfile.contains("COPY web-ui /app/web-ui"),
-        "{path} should copy frontend source into the build stage"
-    );
-    assert!(
-        dockerfile.contains("RUN npm run build"),
-        "{path} should compile frontend assets during image build"
-    );
-    assert!(
-        dockerfile.contains("COPY --from=frontend-build /app/web-ui/dist /app/dist"),
-        "{path} should package the built frontend under /app/dist"
+        dockerfile.contains("COPY web-ui/dist /app/dist"),
+        "{path} should package CI-built frontend assets from web-ui/dist"
     );
     assert!(
         !dockerfile.contains("COPY dist /app/dist"),
@@ -278,14 +272,14 @@ fn docker_entrypoint_maps_config_data_dir_to_data_volume() {
 }
 
 #[test]
-fn docker_context_builds_frontend_from_source_for_clean_checkout_builds() {
+fn docker_context_uses_ci_built_frontend_artifacts() {
     for path in ["Dockerfile", "scripts/docker/Dockerfile"] {
         let dockerfile = repo_file(path);
-        assert_dockerfile_builds_frontend(path, &dockerfile);
+        assert_dockerfile_uses_ci_frontend_artifacts(path, &dockerfile);
     }
     assert!(
         !repo_path("dist/index.html").exists(),
-        "root dist/index.html should not be committed; Docker must build it from web-ui"
+        "root dist/index.html should not be committed; generated assets belong under web-ui/dist"
     );
     assert!(
         !repo_path("dist/assets").exists(),
@@ -320,7 +314,6 @@ fn docker_context_ignores_generated_frontend_artifacts() {
         ".git",
         "target",
         "dist",
-        "web-ui/dist",
         "web-ui/node_modules",
         "web-ui/coverage",
     ] {
@@ -329,6 +322,93 @@ fn docker_context_ignores_generated_frontend_artifacts() {
             ".dockerignore should exclude {ignored} from Docker build context"
         );
     }
+    assert!(
+        !dockerignore.lines().any(|line| line.trim() == "web-ui/dist"),
+        ".dockerignore should allow CI-built web-ui/dist into Docker build context"
+    );
+
+    let gitignore = repo_file(".gitignore");
+    assert!(
+        gitignore.lines().any(|line| line.trim() == "/web-ui/dist"),
+        ".gitignore should still keep generated frontend assets out of Git"
+    );
+}
+
+#[test]
+fn release_version_is_unified_at_1_0_0() {
+    let cargo = repo_file("Cargo.toml");
+    assert!(
+        cargo.contains("version = \"1.0.0\""),
+        "Rust package version should be 1.0.0"
+    );
+
+    let package_json = repo_file("web-ui/package.json");
+    assert!(
+        package_json.contains("\"version\": \"1.0.0\""),
+        "frontend package version should be 1.0.0"
+    );
+
+    let package_lock = repo_file("web-ui/package-lock.json");
+    assert!(
+        package_lock.contains("\"version\": \"1.0.0\""),
+        "frontend lockfile root version should be 1.0.0"
+    );
+
+    let layout = repo_file("web-ui/src/layouts/AdminLayout.tsx");
+    assert!(layout.contains("v1.0.0"));
+    assert!(!layout.contains("v1.6.1"));
+
+    let docker_readme = repo_file("scripts/docker/README.md");
+    assert!(docker_readme.contains("bash docker_build.sh 1.0.0"));
+    assert!(!docker_readme.contains("bash docker_build.sh 1.6.1"));
+}
+
+#[test]
+fn github_ci_workflow_checks_frontend_and_rust() {
+    let workflow = repo_file(".github/workflows/ci.yml");
+    for expected in [
+        "npm ci",
+        "npm run test:unit -- --run",
+        "npm run build",
+        "cargo test --locked",
+        "node-version: 24",
+    ] {
+        assert!(
+            workflow.contains(expected),
+            "CI workflow should contain {expected}"
+        );
+    }
+}
+
+#[test]
+fn github_release_workflow_builds_artifacts_and_pushes_dockerhub() {
+    let workflow = repo_file(".github/workflows/release.yml");
+    for expected in [
+        "VERSION: 1.0.0",
+        "tags:",
+        "'v*'",
+        "contents: write",
+        "node-version: 24",
+        "npm ci",
+        "npm run build",
+        "./build_linux.sh",
+        "./build_window.sh",
+        "dst-admin-go.1.0.0-window.zip",
+        "dst-admin-go.1.0.0.tar.gz",
+        "DOCKERHUB_USERNAME",
+        "DOCKERHUB_TOKEN",
+        "docker/login-action",
+        "docker/build-push-action",
+        "docker.io/yimuu/dst-panel",
+        "softprops/action-gh-release",
+    ] {
+        assert!(
+            workflow.contains(expected),
+            "release workflow should contain {expected}"
+        );
+    }
+    assert!(!workflow.contains("dst-admin-go.1.6.1"));
+    assert!(!workflow.contains("FROM node:24-bookworm-slim AS frontend-build"));
 }
 
 #[test]
@@ -430,7 +510,7 @@ fn mac_arm_docker_release_uses_root_context_and_data_volume() {
         dockerfile.contains(&format!("COPY {base}/docker_dst_config /app/dst_config")),
         "{base}/Dockerfile should copy its DST config from a repository-root build context"
     );
-    assert_dockerfile_builds_frontend(&format!("{base}/Dockerfile"), &dockerfile);
+    assert_dockerfile_uses_ci_frontend_artifacts(&format!("{base}/Dockerfile"), &dockerfile);
     assert!(dockerfile.contains("COPY static /app/static"));
 
     let entrypoint = repo_file(&format!("{base}/docker-entrypoint.sh"));

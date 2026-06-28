@@ -1,10 +1,3 @@
-FROM node:24-bookworm-slim AS frontend-build
-WORKDIR /app/web-ui
-COPY web-ui/package.json web-ui/package-lock.json /app/web-ui/
-RUN npm ci
-COPY web-ui /app/web-ui
-RUN npm run build
-
 FROM --platform=linux/arm64 ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -53,7 +46,7 @@ RUN chmod 755 /app/docker-entrypoint.sh
 
 COPY config.yml /app/config.yml
 COPY scripts/docker-build-mac/docker_dst_config /app/dst_config
-COPY --from=frontend-build /app/web-ui/dist /app/dist
+COPY web-ui/dist /app/dist
 COPY static /app/static
 
 
