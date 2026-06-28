@@ -98,20 +98,14 @@ while [ "$#" -gt 0 ]; do
   shift
 done
 case "$target" in
-  aarch64-unknown-linux-gnu)
-    if [ -z "$CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER" ]; then
-      echo "missing cargo aarch64 linker env" >&2
-      exit 42
-    fi
-    if [ -n "$EXPECTED_AARCH64_LINKER" ] && [ "$CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER" != "$EXPECTED_AARCH64_LINKER" ]; then
-      echo "wrong cargo aarch64 linker env" >&2
-      exit 43
-    fi
-    ;;
   x86_64-unknown-linux-gnu)
     if [ -z "$CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER" ]; then
       echo "missing cargo x86_64 linker env" >&2
       exit 42
+    fi
+    if [ -n "$EXPECTED_X86_64_LINKER" ] && [ "$CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER" != "$EXPECTED_X86_64_LINKER" ]; then
+      echo "wrong cargo x86_64 linker env" >&2
+      exit 43
     fi
     ;;
 esac
@@ -132,13 +126,11 @@ fn install_fake_rust_tools_without_target(bin_dir: &Path, host_target: &str) {
 #[test]
 fn docker_and_install_entrypoints_execute_dst_admin_rust() {
     let checked_files = [
-        "Dockerfile",
-        "docker-entrypoint.sh",
-        "scripts/docker-build-mac/Dockerfile",
-        "scripts/docker-build-mac/docker-entrypoint.sh",
+        "docker/Dockerfile",
+        "docker/entrypoint.sh",
         "static/script/dst-go.sh",
-        "build_linux.sh",
-        "build_window.sh",
+        "tools/release/build-linux.sh",
+        "tools/release/build-windows.sh",
         "docs/multiServer.md",
     ];
 
@@ -170,27 +162,19 @@ fn docker_and_install_entrypoints_execute_dst_admin_rust() {
 
 #[test]
 fn docker_platforms_match_the_release_binary_targets() {
-    let linux_dockerfile = repo_file("Dockerfile");
+    let linux_dockerfile = repo_file("docker/Dockerfile");
     assert!(
         linux_dockerfile.contains("FROM --platform=linux/amd64 ubuntu:24.04"),
-        "root Dockerfile should be pinned to linux/amd64 to match the default Linux binary"
+        "Dockerfile should be pinned to linux/amd64 to match the default Linux binary"
     );
     assert!(
         linux_dockerfile.contains("libcurl3t64-gnutls")
             && linux_dockerfile.contains("libcurl3t64-gnutls:i386"),
         "root Dockerfile should include both 64-bit DST and 32-bit SteamCMD cURL libraries"
     );
-
-    let mac_arm_dockerfile = repo_file("scripts/docker-build-mac/Dockerfile");
     assert!(
-        mac_arm_dockerfile.contains("FROM --platform=linux/arm64 ubuntu:22.04"),
-        "mac arm Dockerfile should be pinned to linux/arm64"
-    );
-
-    let mac_arm_notes = repo_file("scripts/docker-build-mac/dst-mac-arm64-env-install.md");
-    assert!(
-        mac_arm_notes.contains("RUST_TARGET=aarch64-unknown-linux-gnu ./build_linux.sh"),
-        "mac arm Docker docs should explain how to build a matching Rust binary"
+        !linux_dockerfile.contains("linux/arm64") && !linux_dockerfile.contains("box64"),
+        "ARM Docker support should not be present in the main Dockerfile"
     );
 }
 
@@ -198,15 +182,15 @@ fn docker_platforms_match_the_release_binary_targets() {
 fn install_docs_build_local_rust_docker_image() {
     let install_doc = repo_file("docs/install.md");
     assert!(
-        install_doc.contains("./build_linux.sh"),
+        install_doc.contains("./tools/release/build-linux.sh"),
         "install docs should build the Rust binary before Docker images"
     );
     assert!(
-        install_doc.contains("docker build -t dst-admin-rust:local ."),
+        install_doc.contains("docker build --platform linux/amd64 -f docker/Dockerfile -t dst-panel:local ."),
         "install docs should build a local Rust Docker image"
     );
     assert!(
-        install_doc.contains("dst-admin-rust:local"),
+        install_doc.contains("dst-panel:local"),
         "install docs should run the local Rust Docker image"
     );
     assert!(
@@ -232,10 +216,14 @@ fn install_docs_build_local_rust_docker_image() {
 
 #[test]
 fn docker_publish_script_builds_and_pushes_rust_image() {
-    let script = repo_file("docker_build.sh");
+    let script = repo_file("tools/release/docker-build.sh");
     assert!(
-        script.contains("./build_linux.sh"),
+        script.contains("./tools/release/build-linux.sh"),
         "Docker publish script should build the Rust binary first"
+    );
+    assert!(
+        script.contains("-f docker/Dockerfile"),
+        "Docker publish script should build with the canonical Dockerfile"
     );
     assert!(
         script.contains("IMAGE_NAME=${IMAGE_NAME:-yimuu/dst-panel}"),
@@ -257,7 +245,7 @@ fn docker_publish_script_builds_and_pushes_rust_image() {
 
 #[test]
 fn docker_entrypoint_maps_config_data_dir_to_data_volume() {
-    let entrypoint = repo_file("docker-entrypoint.sh");
+    let entrypoint = repo_file("docker/entrypoint.sh");
     assert!(entrypoint.contains("DATA_DIR=\"/data\""));
     assert!(entrypoint.contains("cd \"$DATA_DIR\""));
     assert!(entrypoint.contains("exec \"$APP_DIR/dst-admin-rust\""));
@@ -281,10 +269,8 @@ fn docker_entrypoint_maps_config_data_dir_to_data_volume() {
 
 #[test]
 fn docker_context_uses_ci_built_frontend_artifacts() {
-    for path in ["Dockerfile", "scripts/docker/Dockerfile"] {
-        let dockerfile = repo_file(path);
-        assert_dockerfile_uses_ci_frontend_artifacts(path, &dockerfile);
-    }
+    let dockerfile = repo_file("docker/Dockerfile");
+    assert_dockerfile_uses_ci_frontend_artifacts("docker/Dockerfile", &dockerfile);
     assert!(
         !repo_path("dist/index.html").exists(),
         "root dist/index.html should not be committed; generated assets belong under web-ui/dist"
@@ -373,8 +359,8 @@ fn release_version_is_unified_at_1_0_0() {
         "frontend version should be injected from package.json at build time"
     );
 
-    let docker_readme = repo_file("scripts/docker/README.md");
-    assert!(docker_readme.contains("bash docker_build.sh"));
+    let docker_readme = repo_file("docker/README.md");
+    assert!(docker_readme.contains("./tools/release/docker-build.sh"));
     assert!(!docker_readme.contains("bash docker_build.sh 1.0.0"));
     assert!(!docker_readme.contains("bash docker_build.sh 1.6.1"));
 }
@@ -411,8 +397,9 @@ fn github_release_workflow_builds_artifacts_and_pushes_dockerhub() {
         "node-version: 24",
         "npm ci",
         "npm run build",
-        "./build_linux.sh",
-        "./build_window.sh",
+        "./tools/release/build-linux.sh",
+        "./tools/release/build-windows.sh",
+        "file: docker/Dockerfile",
         "DOCKERHUB_USERNAME",
         "DOCKERHUB_TOKEN",
         "docker/login-action",
@@ -439,8 +426,8 @@ fn contributor_docs_describe_rust_commands_after_cutover() {
     let docs = repo_file("CLAUDE.md");
     assert!(docs.contains("cargo run --bin dst-admin-rust"));
     assert!(docs.contains("cargo test --locked"));
-    assert!(docs.contains("./build_linux.sh"));
-    assert!(docs.contains("./build_window.sh"));
+    assert!(docs.contains("./tools/release/build-linux.sh"));
+    assert!(docs.contains("./tools/release/build-windows.sh"));
     for legacy in [
         "go mod tidy",
         "go run cmd/server/main.go",
@@ -461,7 +448,7 @@ fn contributor_docs_describe_rust_commands_after_cutover() {
 
 #[test]
 fn docker_release_docs_use_data_volume_layout() {
-    let entrypoint = repo_file("scripts/docker/docker-entrypoint.sh");
+    let entrypoint = repo_file("docker/entrypoint.sh");
     assert!(entrypoint.contains("DATA_DIR=\"/data\""));
     assert!(entrypoint.contains("APP_DIR=\"/app\""));
     assert!(entrypoint.contains("cd \"$DATA_DIR\""));
@@ -483,72 +470,15 @@ fn docker_release_docs_use_data_volume_layout() {
         "release Docker entrypoint should not leave stale frontend assets after image upgrades"
     );
 
-    let docs = repo_file("scripts/docker/README.md");
+    let docs = repo_file("docker/README.md");
     assert!(docs.contains("-v ~/dstsave:/data"));
     assert!(docs.contains("dataDir: \".\""));
-    assert_no_legacy_docker_paths("scripts/docker/README.md", &docs);
+    assert_no_legacy_docker_paths("docker/README.md", &docs);
 }
 
 #[test]
 fn docker_dst_config_uses_data_volume_for_klei_and_game_paths() {
-    for path in ["docker_dst_config", "scripts/docker/docker_dst_config"] {
-        let config = repo_file(path);
-        for expected in [
-            "steamcmd=/data/steamcmd",
-            "force_install_dir=/data/dst-dedicated-server",
-            "backup=/data/backup",
-            "mod_download_path=/data/mod",
-            "persistent_storage_root=/data",
-            "conf_dir=klei",
-        ] {
-            assert!(config.contains(expected), "{path} missing {expected}");
-        }
-    }
-}
-
-#[test]
-fn mac_arm_docker_release_uses_root_context_and_data_volume() {
-    assert!(
-        !repo_path("script").exists(),
-        "use scripts/ for repository helper scripts; root script/ is a legacy duplicate"
-    );
-
-    let base = "scripts/docker-build-mac";
-    let dockerfile = repo_file(&format!("{base}/Dockerfile"));
-    assert!(
-        dockerfile.contains("FROM --platform=linux/arm64 ubuntu:22.04"),
-        "{base}/Dockerfile should pin the ARM64 image platform"
-    );
-    assert!(
-        dockerfile.contains("VOLUME [\"/data\"]"),
-        "{base}/Dockerfile should declare the persistent data volume"
-    );
-    assert!(
-        dockerfile.contains(&format!(
-            "COPY {base}/docker-entrypoint.sh /app/docker-entrypoint.sh"
-        )),
-        "{base}/Dockerfile should copy its entrypoint from a repository-root build context"
-    );
-    assert!(
-        dockerfile.contains(&format!("COPY {base}/docker_dst_config /app/dst_config")),
-        "{base}/Dockerfile should copy its DST config from a repository-root build context"
-    );
-    assert_dockerfile_uses_ci_frontend_artifacts(&format!("{base}/Dockerfile"), &dockerfile);
-    assert!(dockerfile.contains("COPY static /app/static"));
-
-    let entrypoint = repo_file(&format!("{base}/docker-entrypoint.sh"));
-    assert!(entrypoint.contains("set -e"));
-    assert!(entrypoint.contains("DATA_DIR=\"/data\""));
-    assert!(entrypoint.contains("APP_DIR=\"/app\""));
-    assert!(entrypoint.contains("dataDir: \".\""));
-    assert!(entrypoint.contains("cp -a \"$APP_DIR/dist/.\" \"$DATA_DIR/dist/\""));
-    assert!(entrypoint.contains("cp -a \"$APP_DIR/static/.\" \"$DATA_DIR/static/\""));
-    assert!(entrypoint.contains("-dir \"$data_dst_server\""));
-    assert!(entrypoint.contains("cd \"$DATA_DIR\""));
-    assert!(entrypoint.contains("exec \"$APP_DIR/dst-admin-rust\""));
-    assert_no_legacy_docker_paths(&format!("{base}/docker-entrypoint.sh"), &entrypoint);
-
-    let config = repo_file(&format!("{base}/docker_dst_config"));
+    let config = repo_file("docker/dst_config");
     for expected in [
         "steamcmd=/data/steamcmd",
         "force_install_dir=/data/dst-dedicated-server",
@@ -556,29 +486,41 @@ fn mac_arm_docker_release_uses_root_context_and_data_volume() {
         "mod_download_path=/data/mod",
         "persistent_storage_root=/data",
         "conf_dir=klei",
-        "bin=2664",
     ] {
-        assert!(
-            config.contains(expected),
-            "{base}/docker_dst_config missing {expected}"
-        );
+        assert!(config.contains(expected), "docker/dst_config missing {expected}");
     }
-    assert_no_legacy_docker_paths(&format!("{base}/docker_dst_config"), &config);
+}
 
-    let notes = repo_file(&format!("{base}/dst-mac-arm64-env-install.md"));
-    assert!(notes.contains("RUST_TARGET=aarch64-unknown-linux-gnu ./build_linux.sh"));
-    assert!(notes.contains("-dir /data/dst-dedicated-server"));
-    assert_no_legacy_docker_paths(&format!("{base}/dst-mac-arm64-env-install.md"), &notes);
-
-    let readme = repo_file("scripts/docker-build-mac/README.md");
-    assert!(readme.contains(
-        "docker build --platform linux/arm64 -f scripts/docker-build-mac/Dockerfile -t dst-admin-rust-arm64:latest ."
-    ));
-    assert!(readme.contains("-v ~/dstsave:/data"));
-    assert!(readme.contains("/data/dst-dedicated-server"));
-    assert!(readme.contains("/data/dst-db"));
-    assert!(readme.contains("/data/dst-admin-go.log"));
-    assert_no_legacy_docker_paths("scripts/docker-build-mac/README.md", &readme);
+#[test]
+fn release_layout_has_single_amd64_dockerfile_and_no_root_scripts_dir() {
+    assert!(
+        !repo_path("scripts").exists(),
+        "root scripts/ directory should be removed; use tools/ for repository helper scripts"
+    );
+    assert!(
+        !repo_path("Dockerfile").exists()
+            && !repo_path("docker-entrypoint.sh").exists()
+            && !repo_path("docker_dst_config").exists()
+            && !repo_path("build_linux.sh").exists()
+            && !repo_path("build_window.sh").exists()
+            && !repo_path("docker_build.sh").exists(),
+        "root release and Docker helper files should live under docker/ or tools/release/"
+    );
+    assert!(
+        repo_path("docker/Dockerfile").exists()
+            && repo_path("docker/entrypoint.sh").exists()
+            && repo_path("docker/dst_config").exists()
+            && repo_path("tools/release/build-linux.sh").exists()
+            && repo_path("tools/release/build-windows.sh").exists()
+            && repo_path("tools/release/docker-build.sh").exists(),
+        "canonical Docker and release helper paths should exist"
+    );
+    let linux_script = repo_file("tools/release/build-linux.sh");
+    assert!(
+        !linux_script.contains("aarch64-unknown-linux-gnu")
+            && !linux_script.contains("aarch64-linux-gnu-gcc"),
+        "ARM release build support should be removed for now"
+    );
 }
 
 #[cfg(unix)]
@@ -587,9 +529,10 @@ fn docker_publish_script_forces_amd64_rust_binary_for_amd64_image() {
     let temp = tempfile::tempdir().expect("tempdir");
     let bin_dir = temp.path().join("bin");
     fs::create_dir(&bin_dir).expect("create fake bin dir");
+    fs::create_dir_all(temp.path().join("tools/release")).expect("create fake release dir");
 
     write_executable(
-        &temp.path().join("build_linux.sh"),
+        &temp.path().join("tools/release/build-linux.sh"),
         r#"#!/bin/sh
 printf '%s' "$RUST_TARGET" > observed-rust-target
 touch dst-admin-rust
@@ -604,10 +547,10 @@ printf '%s\n' "$*" >> docker-calls
 
     let mut command = Command::new("bash");
     command
-        .arg(repo_path("docker_build.sh"))
+        .arg(repo_path("tools/release/docker-build.sh"))
         .arg("test-tag")
         .current_dir(temp.path())
-        .env("RUST_TARGET", "aarch64-unknown-linux-gnu");
+        .env("RUST_TARGET", "unsupported-linux-target");
     prepend_path(&mut command, &bin_dir);
     let output = command.output().expect("run docker_build.sh");
 
@@ -617,7 +560,10 @@ printf '%s\n' "$*" >> docker-calls
         "x86_64-unknown-linux-gnu"
     );
     let docker_calls = fs::read_to_string(temp.path().join("docker-calls")).expect("docker calls");
-    assert!(docker_calls.contains("build --platform linux/amd64 -t yimuu/dst-panel:test-tag ."));
+    assert!(
+        docker_calls
+            .contains("build --platform linux/amd64 -f docker/Dockerfile -t yimuu/dst-panel:test-tag .")
+    );
     assert!(docker_calls.contains("push yimuu/dst-panel:test-tag"));
 }
 
@@ -631,7 +577,7 @@ fn linux_release_script_fails_before_cargo_when_rust_target_is_missing() {
 
     let mut command = Command::new("sh");
     command
-        .arg(repo_path("build_linux.sh"))
+        .arg(repo_path("tools/release/build-linux.sh"))
         .current_dir(temp.path())
         .env("RUST_TARGET", "x86_64-unknown-linux-gnu");
     prepend_path(&mut command, &bin_dir);
@@ -659,7 +605,7 @@ fn windows_release_script_fails_before_cargo_when_rust_target_is_missing() {
 
     let mut command = Command::new("sh");
     command
-        .arg(repo_path("build_window.sh"))
+        .arg(repo_path("tools/release/build-windows.sh"))
         .current_dir(temp.path());
     prepend_path(&mut command, &bin_dir);
     let output = command.output().expect("run build_window.sh");
@@ -678,14 +624,14 @@ fn windows_release_script_fails_before_cargo_when_rust_target_is_missing() {
 
 #[test]
 fn release_build_scripts_fail_fast_for_missing_cross_targets() {
-    let linux_script = repo_file("build_linux.sh");
+    let linux_script = repo_file("tools/release/build-linux.sh");
     assert!(linux_script.contains("x86_64-unknown-linux-gnu"));
     assert!(
         linux_script.contains("rustup target list --installed"),
         "Linux build script should check that the requested Rust target is installed"
     );
 
-    let windows_script = repo_file("build_window.sh");
+    let windows_script = repo_file("tools/release/build-windows.sh");
     assert!(windows_script.contains("x86_64-pc-windows-gnu"));
     assert!(
         windows_script.contains("rustup target list --installed"),
@@ -698,7 +644,7 @@ fn release_build_scripts_fail_fast_for_missing_cross_targets() {
 
     let readme = repo_file("README.md");
     assert!(
-        readme.contains("./build_linux.sh"),
+        readme.contains("./tools/release/build-linux.sh"),
         "README should point release users at the script that copies ./dst-admin-rust"
     );
     assert!(readme.contains("LINUX_LINKER"));
@@ -707,7 +653,7 @@ fn release_build_scripts_fail_fast_for_missing_cross_targets() {
 
     let readme_en = repo_file("README-EN.md");
     assert!(
-        readme_en.contains("./build_linux.sh"),
+        readme_en.contains("./tools/release/build-linux.sh"),
         "English README should point release users at the script that copies ./dst-admin-rust"
     );
     assert!(readme_en.contains("LINUX_LINKER"));
@@ -717,27 +663,27 @@ fn release_build_scripts_fail_fast_for_missing_cross_targets() {
 
 #[cfg(unix)]
 #[test]
-fn linux_release_script_fails_before_cargo_when_cross_linker_is_missing() {
+fn linux_release_script_rejects_unsupported_linux_targets() {
     let temp = tempfile::tempdir().expect("tempdir");
     let bin_dir = temp.path().join("bin");
     fs::create_dir(&bin_dir).expect("create fake bin dir");
-    install_fake_rust_tools(&bin_dir, "aarch64-unknown-linux-gnu", "x86_64-apple-darwin");
+    install_fake_rust_tools(&bin_dir, "powerpc64le-unknown-linux-gnu", "x86_64-apple-darwin");
 
     let mut command = Command::new("sh");
     command
-        .arg(repo_path("build_linux.sh"))
+        .arg(repo_path("tools/release/build-linux.sh"))
         .current_dir(temp.path())
-        .env("RUST_TARGET", "aarch64-unknown-linux-gnu");
+        .env("RUST_TARGET", "powerpc64le-unknown-linux-gnu");
     prepend_path(&mut command, &bin_dir);
     let output = command.output().expect("run build_linux.sh");
 
     assert!(!output.status.success());
     let stderr = String::from_utf8_lossy(&output.stderr);
-    assert!(stderr.contains("Linux linker 'aarch64-linux-gnu-gcc' is required"));
+    assert!(stderr.contains("Unsupported Linux release target 'powerpc64le-unknown-linux-gnu'"));
     assert!(
         !temp
             .path()
-            .join("target/aarch64-unknown-linux-gnu/release/dst-admin-rust")
+            .join("target/powerpc64le-unknown-linux-gnu/release/dst-admin-rust")
             .exists(),
         "cargo should not run before the linker preflight passes"
     );
@@ -749,17 +695,17 @@ fn linux_release_script_uses_matching_cross_linker_when_available() {
     let temp = tempfile::tempdir().expect("tempdir");
     let bin_dir = temp.path().join("bin");
     fs::create_dir(&bin_dir).expect("create fake bin dir");
-    install_fake_rust_tools(&bin_dir, "aarch64-unknown-linux-gnu", "x86_64-apple-darwin");
+    install_fake_rust_tools(&bin_dir, "x86_64-unknown-linux-gnu", "x86_64-apple-darwin");
     write_executable(
-        &bin_dir.join("aarch64-linux-gnu-gcc"),
+        &bin_dir.join("x86_64-linux-gnu-gcc"),
         "#!/bin/sh\nexit 0\n",
     );
 
     let mut command = Command::new("sh");
     command
-        .arg(repo_path("build_linux.sh"))
+        .arg(repo_path("tools/release/build-linux.sh"))
         .current_dir(temp.path())
-        .env("RUST_TARGET", "aarch64-unknown-linux-gnu");
+        .env("RUST_TARGET", "x86_64-unknown-linux-gnu");
     prepend_path(&mut command, &bin_dir);
     let output = command.output().expect("run build_linux.sh");
 
@@ -773,16 +719,16 @@ fn linux_release_script_passes_custom_linker_to_cargo() {
     let temp = tempfile::tempdir().expect("tempdir");
     let bin_dir = temp.path().join("bin");
     fs::create_dir(&bin_dir).expect("create fake bin dir");
-    install_fake_rust_tools(&bin_dir, "aarch64-unknown-linux-gnu", "x86_64-apple-darwin");
+    install_fake_rust_tools(&bin_dir, "x86_64-unknown-linux-gnu", "x86_64-apple-darwin");
     write_executable(&bin_dir.join("custom-linux-linker"), "#!/bin/sh\nexit 0\n");
 
     let mut command = Command::new("sh");
     command
-        .arg(repo_path("build_linux.sh"))
+        .arg(repo_path("tools/release/build-linux.sh"))
         .current_dir(temp.path())
-        .env("RUST_TARGET", "aarch64-unknown-linux-gnu")
+        .env("RUST_TARGET", "x86_64-unknown-linux-gnu")
         .env("LINUX_LINKER", "custom-linux-linker")
-        .env("EXPECTED_AARCH64_LINKER", "custom-linux-linker");
+        .env("EXPECTED_X86_64_LINKER", "custom-linux-linker");
     prepend_path(&mut command, &bin_dir);
     let output = command.output().expect("run build_linux.sh");
 
@@ -800,7 +746,7 @@ fn windows_release_script_fails_before_cargo_when_mingw_linker_is_missing() {
 
     let mut command = Command::new("sh");
     command
-        .arg(repo_path("build_window.sh"))
+        .arg(repo_path("tools/release/build-windows.sh"))
         .current_dir(temp.path());
     prepend_path(&mut command, &bin_dir);
     let output = command.output().expect("run build_window.sh");

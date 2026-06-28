@@ -19,11 +19,11 @@ The server listens on port `8082` by default. Runtime configuration is loaded fr
 ### Building
 
 ```bash
-./build_linux.sh
-./build_window.sh
+./tools/release/build-linux.sh
+./tools/release/build-windows.sh
 ```
 
-`./build_linux.sh` copies `target/<target>/release/dst-admin-rust` to `./dst-admin-rust`. `./build_window.sh` copies the Windows executable to `./dst-admin-rust.exe`.
+`./tools/release/build-linux.sh` copies `target/<target>/release/dst-admin-rust` to `./dst-admin-rust`. `./tools/release/build-windows.sh` copies the Windows executable to `./dst-admin-rust.exe`.
 
 ### Testing
 
@@ -52,8 +52,9 @@ dst-admin-go/
 │   └── web/             # Axum application, routes, handlers, response/error types
 ├── tests/               # Integration and compatibility tests
 ├── static/              # DST templates and runtime install scripts
-├── dist/                # Minimal static app shell for clean Docker builds
-├── scripts/             # Release/Docker/helper scripts
+├── docker/              # Dockerfile, entrypoint, and Docker DST config
+├── tools/               # Release and helper scripts
+├── web-ui/              # React/Vite frontend source
 ├── config.yml           # Default application configuration
 ├── Cargo.toml
 └── Cargo.lock
@@ -99,5 +100,5 @@ dstVersionUrl: "https://api.dstserverlist.top/api/v2/Server/Version"
 - Add focused tests for behavioral changes before editing implementation.
 - Keep comments concise and useful; prefer tracing logs at operational boundaries.
 - Do not reintroduce removed backend files or module metadata.
-- Preserve `static/customcommands.lua`, `static/script/install_steamcmd.sh`, and release scripts unless a migration task explicitly replaces them.
+- Preserve `static/customcommands.lua`, `static/script/install_steamcmd.sh`, and `tools/release/` scripts unless a migration task explicitly replaces them.
 - Before merging, run the full verification set listed in Testing plus a release binary build.

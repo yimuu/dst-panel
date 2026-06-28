@@ -1,11 +1,16 @@
 #!/bin/sh
 set -e
 
-# Docker images expect a Linux binary; override RUST_TARGET for arm64 images.
+# Docker images expect a Linux amd64 binary.
 target="${RUST_TARGET:-x86_64-unknown-linux-gnu}"
 
 if ! command -v rustup >/dev/null 2>&1; then
   echo "rustup is required to verify Rust target '$target' before release builds." >&2
+  exit 1
+fi
+
+if [ "$target" != "x86_64-unknown-linux-gnu" ]; then
+  echo "Unsupported Linux release target '$target'. Only x86_64-unknown-linux-gnu is supported." >&2
   exit 1
 fi
 
@@ -16,18 +21,9 @@ fi
 
 host_target="$(rustc -vV | awk '/^host:/ { print $2 }')"
 linker=""
-case "$target" in
-  x86_64-unknown-linux-gnu)
-    if [ "$host_target" != "$target" ]; then
-      linker="${LINUX_LINKER:-x86_64-linux-gnu-gcc}"
-    fi
-    ;;
-  aarch64-unknown-linux-gnu)
-    if [ "$host_target" != "$target" ]; then
-      linker="${LINUX_LINKER:-aarch64-linux-gnu-gcc}"
-    fi
-    ;;
-esac
+if [ "$host_target" != "$target" ]; then
+  linker="${LINUX_LINKER:-x86_64-linux-gnu-gcc}"
+fi
 
 if [ -n "$linker" ] && ! command -v "$linker" >/dev/null 2>&1; then
   echo "Linux linker '$linker' is required for Rust target '$target'." >&2
@@ -36,14 +32,7 @@ if [ -n "$linker" ] && ! command -v "$linker" >/dev/null 2>&1; then
 fi
 
 if [ -n "$linker" ]; then
-  case "$target" in
-    x86_64-unknown-linux-gnu)
-      export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER="$linker"
-      ;;
-    aarch64-unknown-linux-gnu)
-      export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER="$linker"
-      ;;
-  esac
+  export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER="$linker"
 fi
 
 cargo build --release --bin dst-admin-rust --target "$target"

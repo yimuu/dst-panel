@@ -71,7 +71,7 @@ jobs:
           sudo apt-get install -y gcc-mingw-w64-x86-64 zip
 
       - name: Build Linux binary
-        run: RUST_TARGET=x86_64-unknown-linux-gnu ./build_linux.sh
+        run: RUST_TARGET=x86_64-unknown-linux-gnu ./tools/release/build-linux.sh
 
       - name: Package Linux release
         env:
@@ -80,13 +80,14 @@ jobs:
         run: |
           package_dir="dist/release/linux/${PACKAGE_NAME}.${VERSION}"
           mkdir -p "${package_dir}"
-          cp dst-admin-rust config.yml docker_dst_config "${package_dir}/"
+          cp dst-admin-rust config.yml "${package_dir}/"
+          cp docker/dst_config "${package_dir}/dst_config"
           cp -R static "${package_dir}/static"
           cp -R web-ui/dist "${package_dir}/dist"
           tar -czf "dist/release/${PACKAGE_NAME}.${VERSION}.tar.gz" -C dist/release/linux "${PACKAGE_NAME}.${VERSION}"
 
       - name: Build Windows binary
-        run: RUST_TARGET=x86_64-pc-windows-gnu ./build_window.sh
+        run: RUST_TARGET=x86_64-pc-windows-gnu ./tools/release/build-windows.sh
 
       - name: Package Windows release
         env:
@@ -95,7 +96,8 @@ jobs:
         run: |
           package_dir="dist/release/windows/${PACKAGE_NAME}.${VERSION}-window"
           mkdir -p "${package_dir}"
-          cp dst-admin-rust.exe config.yml docker_dst_config "${package_dir}/"
+          cp dst-admin-rust.exe config.yml "${package_dir}/"
+          cp docker/dst_config "${package_dir}/dst_config"
           cp -R static "${package_dir}/static"
           cp -R web-ui/dist "${package_dir}/dist"
           cd dist/release/windows
@@ -125,6 +127,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
+          file: docker/Dockerfile
           platforms: linux/amd64
           push: true
           tags: |

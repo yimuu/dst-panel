@@ -40,8 +40,8 @@ yarn-debug.log*
 yarn-error.log*
 
 #py-dst-cli
-/scripts/py-dst-cli/__pycache__
-/scripts/py-dst-cli/data
-/scripts/py-dst-cli/steamapikey.txt
+/tools/py-dst-cli/__pycache__
+/tools/py-dst-cli/data
+/tools/py-dst-cli/steamapikey.txt
 
 /test

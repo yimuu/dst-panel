@@ -77,7 +77,7 @@ def generate_translations(input_folder, po_file, output_file):
 
 
 # 设置文件路径
-input_folder = "./scripts/TMIP/list"  # 替换为文件夹路径
+input_folder = "./tools/py-dst-cli/TMIP/list"  # 替换为文件夹路径
 po_file = "./chinese_s.po"           # 替换为 .po 文件路径
 output_file = "tooManyItemPlus.json"     # 输出文件路径
 

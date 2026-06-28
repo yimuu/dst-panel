@@ -64,7 +64,7 @@ cargo run --bin dst-admin-rust
 ### Build for Linux
 
 ```bash
-./build_linux.sh
+./tools/release/build-linux.sh
 # Output: dst-admin-rust (Linux amd64 binary)
 ```
 
@@ -72,13 +72,13 @@ When cross-compiling for Linux, install the target and provide a linker:
 
 ```bash
 rustup target add x86_64-unknown-linux-gnu
-LINUX_LINKER=x86_64-linux-gnu-gcc ./build_linux.sh
+LINUX_LINKER=x86_64-linux-gnu-gcc ./tools/release/build-linux.sh
 ```
 
 ### Build for Windows
 
 ```bash
-./build_window.sh
+./tools/release/build-windows.sh
 # Output: dst-admin-rust.exe (Windows amd64 binary)
 ```
 
@@ -87,7 +87,7 @@ Windows GNU builds require the Rust target and MinGW linker:
 ```bash
 rustup target add x86_64-pc-windows-gnu
 x86_64-w64-mingw32-gcc --version
-./build_window.sh
+./tools/release/build-windows.sh
 ```
 
 ### Build for the current platform

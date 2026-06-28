@@ -68,7 +68,7 @@ cargo run --bin dst-admin-rust
 ### Linux 打包
 
 ```bash
-./build_linux.sh
+./tools/release/build-linux.sh
 # 输出: dst-admin-rust (Linux amd64 二进制文件)
 ```
 
@@ -76,13 +76,13 @@ cargo run --bin dst-admin-rust
 
 ```bash
 rustup target add x86_64-unknown-linux-gnu
-LINUX_LINKER=x86_64-linux-gnu-gcc ./build_linux.sh
+LINUX_LINKER=x86_64-linux-gnu-gcc ./tools/release/build-linux.sh
 ```
 
 ### Windows 打包
 
 ```bash
-./build_window.sh
+./tools/release/build-windows.sh
 # 输出: dst-admin-rust.exe (Windows amd64 二进制文件)
 ```
 
@@ -91,7 +91,7 @@ Windows GNU 打包需要目标和 MinGW linker：
 ```bash
 rustup target add x86_64-pc-windows-gnu
 x86_64-w64-mingw32-gcc --version
-./build_window.sh
+./tools/release/build-windows.sh
 ```
 
 ### 直接构建当前平台二进制
@@ -102,7 +102,7 @@ cargo build --release --bin dst-admin-rust
 
 ## 前端开发
 
-前端源码位于 `web-ui/`，使用 Vue 3、TypeScript、Vite、Pinia、Vue Router 和 Element Plus。
+前端源码位于 `web-ui/`，使用 React、TypeScript、Vite 和 Ant Design。
 
 常用命令：
 
@@ -114,7 +114,7 @@ npm run test:unit -- --run
 npm run build
 ```
 
-生产构建输出到仓库根目录 `dist/`，由 Rust 服务继续按现有静态资源规则提供访问。
+生产构建输出到 `web-ui/dist/`，发布和 Docker 流程会把它打包到运行目录。
 
 ## QQ 群
 ![QQ 群](docs/image/饥荒开服面板交流issue群聊二维码.png)

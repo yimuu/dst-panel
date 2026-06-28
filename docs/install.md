@@ -22,15 +22,15 @@
 
 ```
 rustup target add x86_64-unknown-linux-gnu
-./build_linux.sh
-docker build -t dst-admin-rust:local .
+./tools/release/build-linux.sh
+docker build --platform linux/amd64 -f docker/Dockerfile -t dst-panel:local .
 docker run --name dst -d \
   -p 8082:8082 \
   -p 10999:10999/udp \
   -p 10998:10998/udp \
   -p 10888:10888/udp \
   -v /root/dstsave:/data \
-  dst-admin-rust:local
+  dst-panel:local
 ```
 
 **路径参考**
