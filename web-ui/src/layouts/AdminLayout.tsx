@@ -60,7 +60,7 @@ export default function AdminLayout() {
         headerTitleRender={(_, title) => (
           <div className="app-brand">
             <span className="app-brand-title">{title}</span>
-            <Tag color="processing">v1.0.0</Tag>
+            <Tag color="processing">v{__APP_VERSION__}</Tag>
             <span className="sr-only">饥荒联机版管理面板</span>
           </div>
         )}

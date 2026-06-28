@@ -20,11 +20,11 @@
 # 进入 docker 目录
 cd scripts/docker
 
-# 构建并推送镜像（需要先登录 Docker Hub）
+# 构建并推送镜像（需要先登录 Docker Hub，不传 tag 时默认使用 Cargo.toml 中的版本）
 bash docker_build.sh <version_tag>
 
-# 示例
-bash docker_build.sh 1.0.0
+# 使用 Cargo.toml 版本
+bash docker_build.sh
 ```
 
 ### 2. 运行容器

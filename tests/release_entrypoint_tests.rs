@@ -242,6 +242,14 @@ fn docker_publish_script_builds_and_pushes_rust_image() {
         "Docker publish script should tag the Rust image"
     );
     assert!(
+        script.contains("DEFAULT_TAG=") && script.contains("Cargo.toml"),
+        "Docker publish script should derive its default tag from Cargo.toml"
+    );
+    assert!(
+        !script.contains("TAG=${1:-1.0.0}"),
+        "Docker publish script should not hardcode the default release version"
+    );
+    assert!(
         !script.contains("dst-admin-go:$TAG"),
         "Docker publish script should not publish the legacy Go image"
     );
@@ -355,11 +363,19 @@ fn release_version_is_unified_at_1_0_0() {
     );
 
     let layout = repo_file("web-ui/src/layouts/AdminLayout.tsx");
-    assert!(layout.contains("v1.0.0"));
+    assert!(layout.contains("__APP_VERSION__"));
+    assert!(!layout.contains("v1.0.0"));
     assert!(!layout.contains("v1.6.1"));
 
+    let vite_config = repo_file("web-ui/vite.config.ts");
+    assert!(
+        vite_config.contains("package.json") && vite_config.contains("__APP_VERSION__"),
+        "frontend version should be injected from package.json at build time"
+    );
+
     let docker_readme = repo_file("scripts/docker/README.md");
-    assert!(docker_readme.contains("bash docker_build.sh 1.0.0"));
+    assert!(docker_readme.contains("bash docker_build.sh"));
+    assert!(!docker_readme.contains("bash docker_build.sh 1.0.0"));
     assert!(!docker_readme.contains("bash docker_build.sh 1.6.1"));
 }
 
@@ -384,17 +400,19 @@ fn github_ci_workflow_checks_frontend_and_rust() {
 fn github_release_workflow_builds_artifacts_and_pushes_dockerhub() {
     let workflow = repo_file(".github/workflows/release.yml");
     for expected in [
-        "VERSION: 1.0.0",
         "tags:",
         "'v*'",
         "contents: write",
+        "version=\"${GITHUB_REF_NAME#v}\"",
+        "package_name=\"dst-panel\"",
+        "steps.release.outputs.version",
+        "steps.release.outputs.package_name",
+        "Validate package versions",
         "node-version: 24",
         "npm ci",
         "npm run build",
         "./build_linux.sh",
         "./build_window.sh",
-        "dst-admin-go.1.0.0-window.zip",
-        "dst-admin-go.1.0.0.tar.gz",
         "DOCKERHUB_USERNAME",
         "DOCKERHUB_TOKEN",
         "docker/login-action",
@@ -407,6 +425,11 @@ fn github_release_workflow_builds_artifacts_and_pushes_dockerhub() {
             "release workflow should contain {expected}"
         );
     }
+    assert!(!workflow.contains("VERSION: 1.0.0"));
+    assert!(!workflow.contains("dst-admin-go.1.0.0"));
+    assert!(!workflow.contains("dst-admin-go.${VERSION}"));
+    assert!(workflow.contains("${PACKAGE_NAME}.${VERSION}.tar.gz"));
+    assert!(workflow.contains("${PACKAGE_NAME}.${VERSION}-window.zip"));
     assert!(!workflow.contains("dst-admin-go.1.6.1"));
     assert!(!workflow.contains("FROM node:24-bookworm-slim AS frontend-build"));
 }
